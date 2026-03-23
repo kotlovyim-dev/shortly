@@ -1,0 +1,29 @@
+{
+    "name": "shortly",
+    "version": "0.1.0",
+    "private": true,
+    "packageManager": "npm@11.8.0",
+    "workspaces": [
+        "apps/*",
+        "packages/*"
+    ],
+    "scripts": {
+        "dev": "turbo run dev --parallel",
+        "build": "turbo run build",
+        "lint": "turbo run lint",
+        "test": "turbo run test",
+        "dev:web": "npm run dev --workspace=apps/web",
+        "build:web": "npm run build --workspace=apps/web",
+        "start:web": "npm run start --workspace=apps/web",
+        "lint:web": "npm run lint --workspace=apps/web",
+        "dev:api": "npm run dev --workspace=apps/api",
+        "build:api": "npm run build --workspace=apps/api",
+        "start:api": "npm run start:prod --workspace=apps/api",
+        "lint:api": "npm run lint --workspace=apps/api",
+        "test:api": "npm run test --workspace=apps/api",
+        "test:e2e:api": "npm run test:e2e --workspace=apps/api"
+    },
+    "devDependencies": {
+        "turbo": "^2.5.8"
+    }
+}
