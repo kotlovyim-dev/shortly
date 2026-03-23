@@ -25,5 +25,16 @@
     },
     "devDependencies": {
         "turbo": "^2.5.8"
+    },
+    "overrides": {
+        "schema-utils": {
+            "ajv": "8.18.0"
+        },
+        "terser-webpack-plugin": {
+            "webpack": "5.105.4",
+            "schema-utils": {
+                "ajv": "8.18.0"
+            }
+        }
     }
 }
