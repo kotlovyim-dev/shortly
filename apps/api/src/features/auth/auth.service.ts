@@ -2,12 +2,14 @@ import {
   ConflictException,
   Injectable,
   InternalServerErrorException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../../config/db/prisma.service';
+import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
 type TokenPair = {
@@ -40,7 +42,7 @@ export class AuthService {
     );
 
     try {
-      const result = await this.prismaService.$transaction(async (tx) => {
+      return await this.prismaService.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
             email: registerDto.email,
@@ -62,17 +64,12 @@ export class AuthService {
 
         await tx.refreshToken.create({
           data: {
-            id: randomUUID(),
-            tokenHash: this.hashToken(tokens.refreshToken),
-            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
-            userId: user.id,
+            ...this.buildRefreshTokenRecord(user.id, tokens.refreshToken),
           },
         });
 
         return tokens;
       });
-
-      return result;
     } catch (error) {
       if (this.isUniqueConstraintError(error)) {
         throw new ConflictException('Email is already in use');
@@ -80,6 +77,39 @@ export class AuthService {
 
       throw new InternalServerErrorException('Failed to register user');
     }
+  }
+
+  async login(loginDto: LoginDto): Promise<TokenPair> {
+    const user = await this.prismaService.user.findUnique({
+      where: {
+        email: loginDto.email,
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      loginDto.password,
+      user.passwordHash,
+    );
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const tokens = await this.issueTokens({
+      sub: user.id,
+      email: user.email,
+      name: user.name,
+    });
+
+    await this.prismaService.refreshToken.create({
+      data: this.buildRefreshTokenRecord(user.id, tokens.refreshToken),
+    });
+
+    return tokens;
   }
 
   private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
@@ -103,6 +133,15 @@ export class AuthService {
 
   private hashToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
+  }
+
+  private buildRefreshTokenRecord(userId: string, refreshToken: string) {
+    return {
+      id: randomUUID(),
+      tokenHash: this.hashToken(refreshToken),
+      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+      userId,
+    };
   }
 
   private isUniqueConstraintError(error: unknown): boolean {
