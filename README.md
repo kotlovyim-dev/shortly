@@ -28,5 +28,6 @@ npm run test
 ## Notes
 
 - Run installs from the root so npm can link workspace dependencies correctly.
+- The web app runs on `3000` and the API defaults to `3001` to avoid port conflicts during local development.
 - Add new app or package folders under `apps/` or `packages/` and npm will pick them up automatically.
 - Turbo will run workspace tasks named `dev`, `build`, `lint`, and `test` across the repo.
