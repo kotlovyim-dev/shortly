@@ -24,6 +24,8 @@
         "test:e2e:api": "npm run test:e2e --workspace=apps/api"
     },
     "devDependencies": {
+        "dotenv": "^17.3.1",
+        "prisma": "^7.5.0",
         "turbo": "^2.5.8"
     },
     "overrides": {
@@ -36,5 +38,8 @@
                 "ajv": "8.18.0"
             }
         }
+    },
+    "dependencies": {
+        "@prisma/client": "^7.5.0"
     }
 }
