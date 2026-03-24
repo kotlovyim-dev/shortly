@@ -1,3 +1,4 @@
+import './config/env.bootstrap';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule } from '@nestjs/config';
@@ -7,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { envValidationSchema } from './config/env.validation';
 import { PrismaModule } from './config/db/prisma.module';
+import { RedisModule } from './config/redis/redis.module';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { PrismaModule } from './config/db/prisma.module';
         uri: configService.getOrThrow<string>('MONGODB_URI'),
       }),
     }),
+    RedisModule,
     PrismaModule,
     ThrottlerModule.forRoot([
       {
