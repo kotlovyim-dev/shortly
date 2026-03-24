@@ -206,13 +206,17 @@ export class AuthService {
 
   private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
+    const uniquePayload = {
+      ...payload,
+      jti: randomUUID(),
+    };
 
-    const accessToken = await this.jwtService.signAsync(payload, {
+    const accessToken = await this.jwtService.signAsync(uniquePayload, {
       secret,
       expiresIn: ACCESS_TOKEN_TTL_SECONDS,
     });
 
-    const refreshToken = await this.jwtService.signAsync(payload, {
+    const refreshToken = await this.jwtService.signAsync(uniquePayload, {
       secret,
       expiresIn: REFRESH_TOKEN_TTL_SECONDS,
     });
