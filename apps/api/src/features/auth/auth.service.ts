@@ -165,31 +165,31 @@ export class AuthService {
     currentUser: CurrentUserPayload,
   ): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
-
-    try {
-      const storedRefreshToken =
-        await this.prismaService.refreshToken.findUnique({
-          where: {
-            tokenHash,
-          },
-          include: {
-            user: {
-              select: {
-                id: true,
-                email: true,
-              },
+    const storedRefreshToken = await this.prismaService.refreshToken.findUnique(
+      {
+        where: {
+          tokenHash,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
             },
           },
-        });
+        },
+      },
+    );
 
-      if (!storedRefreshToken) {
-        return;
-      }
+    if (!storedRefreshToken) {
+      return;
+    }
 
-      if (storedRefreshToken.user.id !== currentUser.userId) {
-        throw new UnauthorizedException('Invalid refresh token');
-      }
+    if (storedRefreshToken.user.id !== currentUser.userId) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
 
+    try {
       await this.prismaService.refreshToken.delete({
         where: {
           tokenHash,
