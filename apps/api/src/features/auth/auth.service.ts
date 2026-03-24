@@ -1,0 +1,116 @@
+import {
+  ConflictException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { createHash, randomUUID } from 'crypto';
+import { PrismaService } from '../../config/db/prisma.service';
+import { RegisterDto } from './dto/register.dto';
+
+type TokenPair = {
+  accessToken: string;
+  refreshToken: string;
+};
+
+type AuthPayload = {
+  sub: string;
+  email: string;
+  name: string | null;
+};
+
+const PASSWORD_SALT_ROUNDS = 10;
+const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
+
+  async register(registerDto: RegisterDto): Promise<TokenPair> {
+    const passwordHash = await bcrypt.hash(
+      registerDto.password,
+      PASSWORD_SALT_ROUNDS,
+    );
+
+    try {
+      const result = await this.prismaService.$transaction(async (tx) => {
+        const user = await tx.user.create({
+          data: {
+            email: registerDto.email,
+            passwordHash,
+            name: registerDto.name,
+          },
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        });
+
+        const tokens = await this.issueTokens({
+          sub: user.id,
+          email: user.email,
+          name: user.name,
+        });
+
+        await tx.refreshToken.create({
+          data: {
+            id: randomUUID(),
+            tokenHash: this.hashToken(tokens.refreshToken),
+            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+            userId: user.id,
+          },
+        });
+
+        return tokens;
+      });
+
+      return result;
+    } catch (error) {
+      if (this.isUniqueConstraintError(error)) {
+        throw new ConflictException('Email is already in use');
+      }
+
+      throw new InternalServerErrorException('Failed to register user');
+    }
+  }
+
+  private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
+    const secret = this.configService.getOrThrow<string>('JWT_SECRET');
+
+    const accessToken = await this.jwtService.signAsync(payload, {
+      secret,
+      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+    });
+
+    const refreshToken = await this.jwtService.signAsync(payload, {
+      secret,
+      expiresIn: REFRESH_TOKEN_TTL_SECONDS,
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  private hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private isUniqueConstraintError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2002'
+    );
+  }
+}
