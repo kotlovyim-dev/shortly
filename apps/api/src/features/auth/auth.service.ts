@@ -112,6 +112,53 @@ export class AuthService {
     return tokens;
   }
 
+  async refresh(refreshToken: string): Promise<TokenPair> {
+    const tokenHash = this.hashToken(refreshToken);
+    const now = new Date();
+
+    return this.prismaService.$transaction(async (tx) => {
+      const storedRefreshToken = await tx.refreshToken.findUnique({
+        where: {
+          tokenHash,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+            },
+          },
+        },
+      });
+
+      if (!storedRefreshToken || storedRefreshToken.expiresAt <= now) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const tokens = await this.issueTokens({
+        sub: storedRefreshToken.user.id,
+        email: storedRefreshToken.user.email,
+        name: storedRefreshToken.user.name,
+      });
+
+      await tx.refreshToken.delete({
+        where: {
+          tokenHash,
+        },
+      });
+
+      await tx.refreshToken.create({
+        data: this.buildRefreshTokenRecord(
+          storedRefreshToken.user.id,
+          tokens.refreshToken,
+        ),
+      });
+
+      return tokens;
+    });
+  }
+
   private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
 
