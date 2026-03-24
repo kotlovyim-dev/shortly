@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../../config/db/prisma.service';
+import type { CurrentUserPayload } from './auth-user.type';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -159,6 +160,50 @@ export class AuthService {
     });
   }
 
+  async logout(
+    refreshToken: string,
+    currentUser: CurrentUserPayload,
+  ): Promise<void> {
+    const tokenHash = this.hashToken(refreshToken);
+
+    try {
+      const storedRefreshToken =
+        await this.prismaService.refreshToken.findUnique({
+          where: {
+            tokenHash,
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+              },
+            },
+          },
+        });
+
+      if (!storedRefreshToken) {
+        return;
+      }
+
+      if (storedRefreshToken.user.id !== currentUser.userId) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      await this.prismaService.refreshToken.delete({
+        where: {
+          tokenHash,
+        },
+      });
+    } catch (error) {
+      if (this.isRecordNotFoundError(error)) {
+        return;
+      }
+
+      throw new InternalServerErrorException('Failed to logout user');
+    }
+  }
+
   private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
 
@@ -197,6 +242,15 @@ export class AuthService {
       error !== null &&
       'code' in error &&
       (error as { code?: string }).code === 'P2002'
+    );
+  }
+
+  private isRecordNotFoundError(error: unknown): boolean {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: string }).code === 'P2025'
     );
   }
 }

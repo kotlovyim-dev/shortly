@@ -6,13 +6,17 @@ import {
   Req,
   Res,
   UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type { Response } from 'express';
+import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
+import type { CurrentUserPayload } from './auth-user.type';
 
 const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
 const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
@@ -70,6 +74,28 @@ export class AuthController {
     return {
       accessToken: tokens.accessToken,
     };
+  }
+
+  @Post('logout')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  async logout(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body() refreshDto: RefreshDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    const refreshToken =
+      refreshDto.refreshToken ?? this.getRefreshTokenFromCookie(request);
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token is required');
+    }
+
+    await this.authService.logout(refreshToken, currentUser);
+    response.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
+      path: '/auth/refresh',
+    });
   }
 
   private setRefreshTokenCookie(
