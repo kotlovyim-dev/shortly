@@ -4,6 +4,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { envValidationSchema } from './config/env.validation';
+import { PrismaModule } from './config/db/prisma.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { envValidationSchema } from './config/env.validation';
       expandVariables: true,
       validationSchema: envValidationSchema,
     }),
+    PrismaModule,
     ThrottlerModule.forRoot([
       {
         ttl: Number(process.env.THROTTLE_TTL ?? 60000),
