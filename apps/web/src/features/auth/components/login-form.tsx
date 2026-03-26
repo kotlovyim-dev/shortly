@@ -37,7 +37,10 @@ export function LoginForm() {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium" htmlFor="password">
+                        <label
+                            className="text-sm font-medium"
+                            htmlFor="password"
+                        >
                             Password
                         </label>
                         <Input
@@ -60,7 +63,12 @@ export function LoginForm() {
                         </p>
                     ) : null}
 
-                    <Button className="w-full" disabled={isSubmitting} size="lg" type="submit">
+                    <Button
+                        className="w-full"
+                        disabled={isSubmitting}
+                        size="lg"
+                        type="submit"
+                    >
                         {isSubmitting ? "Signing in..." : "Sign in"}
                     </Button>
                 </form>
@@ -68,7 +76,10 @@ export function LoginForm() {
             footer={
                 <p className="text-center text-sm text-muted-foreground">
                     New to Shortly?{" "}
-                    <Link className="text-primary underline-offset-4 hover:underline" href="/auth/register">
+                    <Link
+                        className="text-primary underline-offset-4 hover:underline"
+                        href="/auth/register"
+                    >
                         Create an account
                     </Link>
                 </p>

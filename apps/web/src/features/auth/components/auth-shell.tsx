@@ -27,7 +27,10 @@ export function AuthShell({
 
             <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
                 <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/65 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-                    <Badge className="mb-5 bg-primary/15 text-primary" variant="secondary">
+                    <Badge
+                        className="mb-5 bg-primary/15 text-primary"
+                        variant="secondary"
+                    >
                         {eyebrow}
                     </Badge>
 
@@ -61,7 +64,10 @@ export function AuthShell({
 
                     <p className="mt-8 text-sm text-muted-foreground">
                         Back to{" "}
-                        <Link className="text-primary underline-offset-4 hover:underline" href="/">
+                        <Link
+                            className="text-primary underline-offset-4 hover:underline"
+                            href="/"
+                        >
                             landing page
                         </Link>
                     </p>
@@ -69,7 +75,9 @@ export function AuthShell({
 
                 <Card className="border-border/70 bg-card/88 shadow-2xl">
                     <CardHeader className="space-y-2">
-                        <h2 className="font-heading text-2xl font-semibold">Account access</h2>
+                        <h2 className="font-heading text-2xl font-semibold">
+                            Account access
+                        </h2>
                         <p className="text-sm text-muted-foreground">
                             Continue to your personal workspace.
                         </p>

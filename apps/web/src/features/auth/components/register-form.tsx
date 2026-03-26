@@ -54,7 +54,10 @@ export function RegisterForm() {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium" htmlFor="password">
+                        <label
+                            className="text-sm font-medium"
+                            htmlFor="password"
+                        >
                             Password
                         </label>
                         <Input
@@ -72,7 +75,10 @@ export function RegisterForm() {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium" htmlFor="confirmPassword">
+                        <label
+                            className="text-sm font-medium"
+                            htmlFor="confirmPassword"
+                        >
                             Confirm password
                         </label>
                         <Input
@@ -95,15 +101,25 @@ export function RegisterForm() {
                         </p>
                     ) : null}
 
-                    <Button className="w-full" disabled={isSubmitting} size="lg" type="submit">
-                        {isSubmitting ? "Creating account..." : "Create account"}
+                    <Button
+                        className="w-full"
+                        disabled={isSubmitting}
+                        size="lg"
+                        type="submit"
+                    >
+                        {isSubmitting
+                            ? "Creating account..."
+                            : "Create account"}
                     </Button>
                 </form>
             }
             footer={
                 <p className="text-center text-sm text-muted-foreground">
                     Already have an account?{" "}
-                    <Link className="text-primary underline-offset-4 hover:underline" href="/auth/login">
+                    <Link
+                        className="text-primary underline-offset-4 hover:underline"
+                        href="/auth/login"
+                    >
                         Sign in
                     </Link>
                 </p>

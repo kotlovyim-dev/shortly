@@ -1,7 +1,4 @@
-import axios, {
-    AxiosError,
-    type InternalAxiosRequestConfig,
-} from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
 import {
     clearAccessToken,
@@ -68,7 +65,9 @@ function redirectToLogin(): void {
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
-        const originalRequest = error.config as RetryableRequestConfig | undefined;
+        const originalRequest = error.config as
+            | RetryableRequestConfig
+            | undefined;
 
         if (!originalRequest || error.response?.status !== 401) {
             return Promise.reject(error);

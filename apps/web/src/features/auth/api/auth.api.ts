@@ -7,7 +7,10 @@ import type {
 } from "@/features/auth/types/auth.types";
 
 export async function loginRequest(payload: LoginPayload) {
-    const response = await api.post<AuthTokensResponse>("/api/auth/login", payload);
+    const response = await api.post<AuthTokensResponse>(
+        "/api/auth/login",
+        payload,
+    );
     return response.data;
 }
 

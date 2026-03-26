@@ -45,7 +45,9 @@ export function useRegisterForm() {
                 return;
             }
 
-            setServerError("Unable to create account right now. Please try again.");
+            setServerError(
+                "Unable to create account right now. Please try again.",
+            );
         }
     });
 
