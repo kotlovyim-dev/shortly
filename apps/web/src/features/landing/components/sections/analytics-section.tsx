@@ -39,7 +39,9 @@ export function AnalyticsSection() {
             <div className="grid gap-7 lg:grid-cols-[1.3fr_0.7fr] lg:gap-8">
                 <Card className="rounded-3xl border-border/70 bg-background/75 py-8 backdrop-blur-xl">
                     <CardHeader className="px-8">
-                        <CardTitle className="text-2xl">Hourly clicks</CardTitle>
+                        <CardTitle className="text-2xl">
+                            Hourly clicks
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="h-80 px-8">
                         <ClicksChart />
@@ -48,7 +50,9 @@ export function AnalyticsSection() {
 
                 <Card className="rounded-3xl border-border/70 bg-background/75 py-8 backdrop-blur-xl">
                     <CardHeader className="px-8">
-                        <CardTitle className="text-2xl">Top countries</CardTitle>
+                        <CardTitle className="text-2xl">
+                            Top countries
+                        </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-6 px-8">
                         {topCountries.map((item, index) => (
