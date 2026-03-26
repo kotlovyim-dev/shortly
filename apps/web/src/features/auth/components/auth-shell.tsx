@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
 
 import Link from "next/link";
-
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import Image from "next/image";
 
 type AuthShellProps = {
     title: string;
     description: string;
     eyebrow: string;
+    singleCard?: boolean;
+    infoContent?: ReactNode;
     form: ReactNode;
     footer: ReactNode;
 };
@@ -17,76 +17,93 @@ export function AuthShell({
     title,
     description,
     eyebrow,
+    singleCard = false,
+    infoContent,
     form,
     footer,
 }: AuthShellProps) {
     return (
-        <main className="relative isolate min-h-screen overflow-hidden bg-background px-4 py-10 text-foreground sm:px-8 sm:py-14">
-            <div className="pointer-events-none absolute left-[-12%] top-[-12%] h-72 w-72 rounded-full bg-[oklch(0.71_0.19_296/0.25)] blur-3xl" />
-            <div className="pointer-events-none absolute bottom-[-18%] right-[-5%] h-80 w-80 rounded-full bg-[oklch(0.73_0.18_260/0.2)] blur-3xl" />
+        <main className="relative h-screen overflow-hidden bg-[radial-gradient(circle_at_12%_8%,#7d40ff_0%,#3e1f8a_34%,#24114f_58%,#140629_100%)] px-3 py-2 text-foreground sm:px-5 sm:py-3">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.24),transparent_32%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_84%,rgba(168,85,247,0.35),transparent_36%)]" />
 
-            <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-                <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/65 p-6 shadow-2xl backdrop-blur-xl sm:p-8">
-                    <Badge
-                        className="mb-5 bg-primary/15 text-primary"
-                        variant="secondary"
-                    >
-                        {eyebrow}
-                    </Badge>
+            <div
+                className={`auth-reveal mx-auto grid h-full w-full overflow-hidden rounded-[2rem] border border-white/25 bg-white/12 shadow-[0_28px_100px_rgba(8,3,25,0.45)] backdrop-blur-xl ${singleCard ? "max-w-2xl lg:grid-cols-1" : "max-w-7xl lg:grid-cols-[1.06fr_0.94fr]"}`}
+            >
+                {!singleCard ? (
+                    <section className="relative hidden overflow-hidden p-7 text-white lg:flex lg:flex-col lg:p-8">
+                        <Image
+                            alt="Abstract colorful waves"
+                            className="object-cover"
+                            fill
+                            priority
+                            src="/auth.png"
+                        />
+                        <div className="absolute inset-0 bg-linear-to-br from-[#1f0d45]/45 via-[#12072b]/58 to-[#06020f]/84" />
 
-                    <h1 className="font-heading text-3xl leading-tight font-semibold sm:text-4xl">
-                        {title}
-                    </h1>
-                    <p className="mt-4 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-                        {description}
-                    </p>
+                        <div className="relative z-10 flex h-full flex-col">
+                            <div className="flex items-center gap-3 text-xs tracking-[0.3em] uppercase">
+                                <span className="font-medium">
+                                    Track Share Measure
+                                </span>
+                                <span className="h-px flex-1 bg-white/40" />
+                            </div>
 
-                    <div className="mt-8 grid gap-3 text-sm text-muted-foreground sm:grid-cols-3">
-                        <div className="rounded-2xl border border-border/70 bg-background/65 p-3">
-                            <p className="font-heading text-lg font-semibold text-foreground">
-                                1 click
-                            </p>
-                            <p>URL creation flow</p>
+                            <div className="mt-auto max-w-sm space-y-5">
+                                <h1 className="font-heading text-5xl leading-[0.96] font-semibold xl:text-6xl">
+                                    Short Links
+                                    <br />
+                                    Big
+                                    <br />
+                                    Signals
+                                </h1>
+                                <p className="max-w-xs text-sm leading-relaxed text-white/85 sm:text-[15px]">
+                                    Build brand-safe short links and understand
+                                    every click with clean, real-time analytics.
+                                </p>
+                            </div>
                         </div>
-                        <div className="rounded-2xl border border-border/70 bg-background/65 p-3">
-                            <p className="font-heading text-lg font-semibold text-foreground">
-                                Live
-                            </p>
-                            <p>real-time analytics</p>
+                    </section>
+                ) : null}
+
+                <section className="relative flex items-center bg-white px-4 py-4 sm:px-7 sm:py-5 lg:px-12">
+                    <div className="mx-auto flex h-full min-h-0 w-full max-w-md flex-col justify-between py-1 sm:py-2">
+                        <div className="flex items-center justify-between gap-4">
+                            <Link
+                                className="text-sm font-semibold tracking-[0.22em] uppercase text-violet-950"
+                                href="/"
+                            >
+                                Shortly
+                            </Link>
+                            <span className="sr-only">{eyebrow}</span>
+                            <Link
+                                className="text-sm text-violet-800/75 transition-colors hover:text-violet-950"
+                                href="/"
+                            >
+                                Back to landing
+                            </Link>
                         </div>
-                        <div className="rounded-2xl border border-border/70 bg-background/65 p-3">
-                            <p className="font-heading text-lg font-semibold text-foreground">
-                                Secure
-                            </p>
-                            <p>token-based access</p>
+
+                        <div className="my-6 space-y-6 sm:my-8 sm:space-y-8">
+                            <div className="space-y-4 text-center sm:space-y-5">
+                                <h2 className="font-heading text-[2.7rem] leading-[1.02] font-semibold text-violet-950 sm:text-[3.2rem]">
+                                    {title}
+                                </h2>
+                                <p className="mx-auto max-w-sm text-sm leading-relaxed text-violet-900/72 sm:text-base">
+                                    {description}
+                                </p>
+                            </div>
+
+                            {infoContent ? (
+                                <div className="space-y-4">{infoContent}</div>
+                            ) : null}
+
+                            <div className="space-y-5 sm:space-y-6">{form}</div>
                         </div>
+
+                        <div className="pt-3 sm:pt-4">{footer}</div>
                     </div>
-
-                    <p className="mt-8 text-sm text-muted-foreground">
-                        Back to{" "}
-                        <Link
-                            className="text-primary underline-offset-4 hover:underline"
-                            href="/"
-                        >
-                            landing page
-                        </Link>
-                    </p>
                 </section>
-
-                <Card className="border-border/70 bg-card/88 shadow-2xl">
-                    <CardHeader className="space-y-2">
-                        <h2 className="font-heading text-2xl font-semibold">
-                            Account access
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            Continue to your personal workspace.
-                        </p>
-                    </CardHeader>
-                    <CardContent className="space-y-5 pb-5">
-                        {form}
-                        {footer}
-                    </CardContent>
-                </Card>
             </div>
         </main>
     );

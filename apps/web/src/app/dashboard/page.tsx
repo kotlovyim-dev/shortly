@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getAccessToken } from "@/features/auth/utils/auth-storage";
+import { routes } from "@/lib/routes";
 
 export default function DashboardPage() {
     const hasToken = Boolean(getAccessToken());
@@ -33,7 +34,7 @@ export default function DashboardPage() {
                             <Link href="/">
                                 <Button>Go to landing</Button>
                             </Link>
-                            <Link href="/auth/login">
+                            <Link href={routes.auth.login}>
                                 <Button variant="outline">Back to login</Button>
                             </Link>
                         </div>
