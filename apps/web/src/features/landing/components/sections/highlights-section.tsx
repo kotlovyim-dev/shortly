@@ -17,34 +17,38 @@ const icons = {
 
 export function HighlightsSection() {
     return (
-        <section className="space-y-5">
-            <div className="space-y-2">
-                <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        <section className="space-y-8">
+            <div className="space-y-3">
+                <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                     Built for fast link campaigns
                 </h2>
-                <p className="max-w-2xl text-base text-muted-foreground">
+                <p className="max-w-3xl text-lg text-muted-foreground">
                     One clear flow: shorten, share, measure.
                 </p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-3">
+            <div className="grid gap-7 md:grid-cols-3 lg:gap-8">
                 {productHighlights.map((item) => {
                     const Icon = icons[item.icon];
 
                     return (
                         <Card
                             key={item.title}
-                            className="rounded-2xl border-border/70 bg-card/70 py-6 shadow-[0_14px_40px_oklch(0.15_0_0_/_0.05)] backdrop-blur-xl"
+                            className="min-h-72 rounded-3xl border-border/70 bg-card/70 py-8 shadow-[0_18px_48px_oklch(0.15_0_0/0.06)] backdrop-blur-xl"
                         >
-                            <CardHeader className="px-6">
-                                <div className="mb-1 flex size-10 items-center justify-center rounded-xl bg-primary/12 text-primary">
-                                    <Icon className="size-5" />
+                            <CardHeader className="gap-2 px-8">
+                                <div className="mb-2 flex size-12 items-center justify-center rounded-2xl bg-primary/12 text-primary">
+                                    <Icon className="size-6" />
                                 </div>
-                                <CardTitle>{item.title}</CardTitle>
-                                <CardDescription>{item.value}</CardDescription>
+                                <CardTitle className="text-3xl/9 sm:text-[1.75rem]">
+                                    {item.title}
+                                </CardTitle>
+                                <CardDescription className="text-base">
+                                    {item.value}
+                                </CardDescription>
                             </CardHeader>
-                            <CardContent className="px-6">
-                                <p className="text-sm leading-relaxed text-muted-foreground">
+                            <CardContent className="mt-2 px-8">
+                                <p className="text-base leading-relaxed text-muted-foreground">
                                     {item.description}
                                 </p>
                             </CardContent>

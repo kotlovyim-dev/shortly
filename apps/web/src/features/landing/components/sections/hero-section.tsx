@@ -56,11 +56,11 @@ export function HeroSection() {
                     </div>
                 </div>
 
-                <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/8 p-8 shadow-[0_26px_90px_oklch(0.1_0_0/0.28)] ring-1 ring-white/30 backdrop-blur-3xl backdrop-saturate-150 sm:p-10 lg:p-12 dark:border-white/10 dark:bg-white/8 dark:ring-white/20">
+                <div className="relative overflow-hidden rounded-2xl border border-white/30 bg-white/5 p-8 shadow-[0_26px_90px_oklch(0.1_0_0/0.28)] ring-1 ring-white/30 backdrop-saturate-150 sm:p-10 lg:p-12 dark:border-white/10 dark:bg-white/8 dark:ring-white/20 backdrop-blur-sm">
                     <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,oklch(0.98_0.02_285/0.3),oklch(0.96_0.01_230/0.14))] dark:bg-[linear-gradient(135deg,oklch(0.28_0.02_285/0.34),oklch(0.16_0.01_230/0.22))]" />
                     <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,oklch(0.72_0.22_300/0.45)_1px,transparent_1.6px)] bg-size-[14px_14px] opacity-70 mix-blend-overlay" />
 
-                    <div className="relative z-10 space-y-4">
+                    <div className="relative z-10 space-y-6">
                         <p className="text-base font-semibold text-foreground/90">
                             Quick demo
                         </p>
@@ -71,7 +71,7 @@ export function HeroSection() {
                         />
                         <Select>
                             <SelectTrigger
-                                className="h-12 w-full border-white/50 bg-white/45 text-base text-foreground backdrop-blur-md dark:bg-black/25"
+                                className="py-4 w-full border-white/50 bg-white/45 text-base text-foreground backdrop-blur-md dark:bg-black/25"
                                 aria-label="Channel"
                             >
                                 <SelectValue placeholder="Select a channel" />

@@ -20,49 +20,49 @@ const ClicksChart = dynamic(
 
 export function AnalyticsSection() {
     return (
-        <section className="rounded-3xl border border-border/70 bg-card/60 p-6 shadow-[0_24px_90px_oklch(0.15_0_0_/_0.06)] backdrop-blur-xl sm:p-8 lg:p-10">
-            <div className="mb-7 flex flex-wrap items-center justify-between gap-3">
+        <section className="rounded-3xl border border-border/70 bg-card/60 p-8 shadow-[0_24px_90px_oklch(0.15_0_0/0.06)] backdrop-blur-xl sm:p-10 lg:p-12">
+            <div className="mb-9 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                         Real-time insights, no clutter
                     </h2>
-                    <p className="mt-2 max-w-2xl text-base text-muted-foreground">
+                    <p className="mt-3 max-w-3xl text-lg text-muted-foreground">
                         Track performance by country, platform, and device in
                         one view.
                     </p>
                 </div>
-                <Badge className="bg-primary/15 text-primary">
+                <Badge className="bg-primary/15 px-4 py-1.5 text-sm text-primary">
                     +174 clicks today
                 </Badge>
             </div>
 
-            <div className="grid gap-5 lg:grid-cols-[1.3fr_0.7fr]">
-                <Card className="rounded-2xl border-border/70 bg-background/75 py-6 backdrop-blur-xl">
-                    <CardHeader className="px-6">
-                        <CardTitle>Hourly clicks</CardTitle>
+            <div className="grid gap-7 lg:grid-cols-[1.3fr_0.7fr] lg:gap-8">
+                <Card className="rounded-3xl border-border/70 bg-background/75 py-8 backdrop-blur-xl">
+                    <CardHeader className="px-8">
+                        <CardTitle className="text-2xl">Hourly clicks</CardTitle>
                     </CardHeader>
-                    <CardContent className="h-64 px-6">
+                    <CardContent className="h-80 px-8">
                         <ClicksChart />
                     </CardContent>
                 </Card>
 
-                <Card className="rounded-2xl border-border/70 bg-background/75 py-6 backdrop-blur-xl">
-                    <CardHeader className="px-6">
-                        <CardTitle>Top countries</CardTitle>
+                <Card className="rounded-3xl border-border/70 bg-background/75 py-8 backdrop-blur-xl">
+                    <CardHeader className="px-8">
+                        <CardTitle className="text-2xl">Top countries</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-5 px-6">
+                    <CardContent className="space-y-6 px-8">
                         {topCountries.map((item, index) => (
                             <div key={item.country}>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="font-medium">
+                                <div className="flex items-center justify-between text-lg">
+                                    <span className="font-semibold">
                                         {item.country}
                                     </span>
-                                    <span className="text-muted-foreground">
+                                    <span className="font-medium text-muted-foreground">
                                         {item.trafficShare}
                                     </span>
                                 </div>
                                 {index < topCountries.length - 1 && (
-                                    <Separator className="mt-3" />
+                                    <Separator className="mt-4" />
                                 )}
                             </div>
                         ))}
