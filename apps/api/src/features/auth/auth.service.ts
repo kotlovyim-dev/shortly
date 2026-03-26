@@ -10,6 +10,10 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash, randomUUID } from 'crypto';
 import { PrismaService } from '../../config/db/prisma.service';
+import {
+  AUTH_ACCESS_TOKEN_TTL_SECONDS,
+  AUTH_REFRESH_TOKEN_TTL_SECONDS,
+} from './auth.constants';
 import type { CurrentUserPayload } from './auth-user.type';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -26,8 +30,6 @@ type AuthPayload = {
 };
 
 const PASSWORD_SALT_ROUNDS = 10;
-const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
-const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 
 @Injectable()
 export class AuthService {
@@ -214,12 +216,12 @@ export class AuthService {
 
     const accessToken = await this.jwtService.signAsync(uniquePayload, {
       secret,
-      expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+      expiresIn: AUTH_ACCESS_TOKEN_TTL_SECONDS,
     });
 
     const refreshToken = await this.jwtService.signAsync(uniquePayload, {
       secret,
-      expiresIn: REFRESH_TOKEN_TTL_SECONDS,
+      expiresIn: AUTH_REFRESH_TOKEN_TTL_SECONDS,
     });
 
     return {
@@ -236,7 +238,7 @@ export class AuthService {
     return {
       id: randomUUID(),
       tokenHash: this.hashToken(refreshToken),
-      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000),
+      expiresAt: new Date(Date.now() + AUTH_REFRESH_TOKEN_TTL_SECONDS * 1000),
       userId,
     };
   }

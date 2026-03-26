@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Get,
   HttpCode,
   Inject,
   Post,
@@ -15,12 +16,16 @@ import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 import type { CurrentUserPayload } from './auth-user.type';
-
-const REFRESH_TOKEN_COOKIE_NAME = 'refreshToken';
-const REFRESH_TOKEN_COOKIE_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+import {
+  AUTH_ACCESS_TOKEN_COOKIE_MAX_AGE_MS,
+  AUTH_ACCESS_TOKEN_COOKIE_NAME,
+  AUTH_ACCESS_TOKEN_COOKIE_PATH,
+  AUTH_REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
+  AUTH_REFRESH_TOKEN_COOKIE_NAME,
+  AUTH_REFRESH_TOKEN_COOKIE_PATH,
+} from './auth.constants';
 
 @Controller('auth')
 export class AuthController {
@@ -30,39 +35,35 @@ export class AuthController {
   async register(
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<void> {
     const tokens = await this.authService.register(registerDto);
 
-    this.setRefreshTokenCookie(response, tokens.refreshToken);
-
-    return {
-      accessToken: tokens.accessToken,
-    };
+    this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
   }
 
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<void> {
     const tokens = await this.authService.login(loginDto);
 
-    this.setRefreshTokenCookie(response, tokens.refreshToken);
+    this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
+  }
 
-    return {
-      accessToken: tokens.accessToken,
-    };
+  @Get('me')
+  @UseGuards(JwtAuthGuard)
+  me(@CurrentUser() currentUser: CurrentUserPayload): CurrentUserPayload {
+    return currentUser;
   }
 
   @Post('refresh')
   @HttpCode(200)
   async refresh(
-    @Body() refreshDto: RefreshDto,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string }> {
-    const refreshToken =
-      refreshDto.refreshToken ?? this.getRefreshTokenFromCookie(request);
+  ): Promise<void> {
+    const refreshToken = this.getRefreshTokenFromCookie(request);
 
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is required');
@@ -70,11 +71,7 @@ export class AuthController {
 
     const tokens = await this.authService.refresh(refreshToken);
 
-    this.setRefreshTokenCookie(response, tokens.refreshToken);
-
-    return {
-      accessToken: tokens.accessToken,
-    };
+    this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
   }
 
   @Post('logout')
@@ -82,33 +79,43 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   async logout(
     @CurrentUser() currentUser: CurrentUserPayload,
-    @Body() refreshDto: RefreshDto,
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ): Promise<void> {
-    const refreshToken =
-      refreshDto.refreshToken ?? this.getRefreshTokenFromCookie(request);
+    const refreshToken = this.getRefreshTokenFromCookie(request);
 
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh token is required');
     }
 
     await this.authService.logout(refreshToken, currentUser);
-    response.clearCookie(REFRESH_TOKEN_COOKIE_NAME, {
-      path: '/auth/refresh',
+    response.clearCookie(AUTH_ACCESS_TOKEN_COOKIE_NAME, {
+      path: AUTH_ACCESS_TOKEN_COOKIE_PATH,
+    });
+    response.clearCookie(AUTH_REFRESH_TOKEN_COOKIE_NAME, {
+      path: AUTH_REFRESH_TOKEN_COOKIE_PATH,
     });
   }
 
-  private setRefreshTokenCookie(
+  private setAuthCookies(
     response: Response,
+    accessToken: string,
     refreshToken: string,
   ): void {
-    response.cookie(REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+    response.cookie(AUTH_ACCESS_TOKEN_COOKIE_NAME, accessToken, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      path: '/auth/refresh',
-      maxAge: REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
+      path: AUTH_ACCESS_TOKEN_COOKIE_PATH,
+      maxAge: AUTH_ACCESS_TOKEN_COOKIE_MAX_AGE_MS,
+    });
+
+    response.cookie(AUTH_REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: AUTH_REFRESH_TOKEN_COOKIE_PATH,
+      maxAge: AUTH_REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
     });
   }
 
@@ -122,12 +129,14 @@ export class AuthController {
     const refreshCookie = cookieHeader
       .split(';')
       .map((part) => part.trim())
-      .find((part) => part.startsWith('refreshToken='));
+      .find((part) => part.startsWith(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`));
 
     if (!refreshCookie) {
       return undefined;
     }
 
-    return decodeURIComponent(refreshCookie.slice('refreshToken='.length));
+    return decodeURIComponent(
+      refreshCookie.slice(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`.length),
+    );
   }
 }
