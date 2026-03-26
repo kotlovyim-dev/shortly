@@ -1,23 +1,14 @@
 import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 
-import {
-    clearAccessToken,
-    getAccessToken,
-    setAccessToken,
-} from "@/features/auth/utils/auth-storage";
 import { routes } from "@/lib/routes";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
     _retry?: boolean;
 };
 
-type RefreshResponse = {
-    accessToken: string;
-};
-
 const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:3001";
 
-let refreshTokenRequest: Promise<string> | null = null;
+let refreshTokenRequest: Promise<void> | null = null;
 
 const refreshClient = axios.create({
     baseURL,
@@ -29,24 +20,11 @@ export const api = axios.create({
     withCredentials: true,
 });
 
-api.interceptors.request.use((config) => {
-    const token = getAccessToken();
-
-    if (token) {
-        config.headers.set("Authorization", `Bearer ${token}`);
-    }
-
-    return config;
-});
-
-async function refreshAccessToken(): Promise<string> {
+async function refreshAccessToken(): Promise<void> {
     if (!refreshTokenRequest) {
         refreshTokenRequest = refreshClient
-            .post<RefreshResponse>("/api/auth/refresh")
-            .then((response) => {
-                setAccessToken(response.data.accessToken);
-                return response.data.accessToken;
-            })
+            .post("/api/auth/refresh")
+            .then(() => undefined)
             .finally(() => {
                 refreshTokenRequest = null;
             });
@@ -56,8 +34,6 @@ async function refreshAccessToken(): Promise<string> {
 }
 
 function redirectToLogin(): void {
-    clearAccessToken();
-
     if (typeof window !== "undefined") {
         window.location.href = routes.auth.login;
     }
@@ -87,8 +63,7 @@ api.interceptors.response.use(
         originalRequest._retry = true;
 
         try {
-            const newToken = await refreshAccessToken();
-            originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+            await refreshAccessToken();
 
             return api(originalRequest);
         } catch (refreshError) {

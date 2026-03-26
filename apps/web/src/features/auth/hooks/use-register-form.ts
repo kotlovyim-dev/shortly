@@ -11,7 +11,6 @@ import {
     type RegisterFormValues,
     registerSchema,
 } from "@/features/auth/schemas/auth.schema";
-import { setAccessToken } from "@/features/auth/utils/auth-storage";
 
 export function useRegisterForm() {
     const [serverError, setServerError] = useState<string | null>(null);
@@ -31,13 +30,12 @@ export function useRegisterForm() {
         setServerError(null);
 
         try {
-            const response = await registerRequest({
+            await registerRequest({
                 name: values.name.trim(),
                 email: values.email,
                 password: values.password,
             });
 
-            setAccessToken(response.accessToken);
             router.replace("/dashboard");
         } catch (error) {
             if (error instanceof AxiosError && error.response?.status === 409) {

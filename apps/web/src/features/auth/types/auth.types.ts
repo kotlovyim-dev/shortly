@@ -1,5 +1,6 @@
-export type AuthTokensResponse = {
-    accessToken: string;
+export type CurrentUserResponse = {
+    userId: string;
+    email: string;
 };
 
 export type LoginPayload = {

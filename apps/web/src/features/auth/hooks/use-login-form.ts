@@ -11,7 +11,6 @@ import {
     type LoginFormValues,
     loginSchema,
 } from "@/features/auth/schemas/auth.schema";
-import { setAccessToken } from "@/features/auth/utils/auth-storage";
 
 export function useLoginForm() {
     const [serverError, setServerError] = useState<string | null>(null);
@@ -29,8 +28,7 @@ export function useLoginForm() {
         setServerError(null);
 
         try {
-            const response = await loginRequest(values);
-            setAccessToken(response.accessToken);
+            await loginRequest(values);
             router.replace("/dashboard");
         } catch (error) {
             if (error instanceof AxiosError && error.response?.status === 401) {
