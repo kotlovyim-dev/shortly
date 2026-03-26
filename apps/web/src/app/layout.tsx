@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sora, Space_Mono } from "next/font/google";
+import { Playfair_Display, Sora, Space_Mono } from "next/font/google";
 import "./globals.css";
 
 const sora = Sora({
@@ -11,6 +11,12 @@ const spaceMono = Space_Mono({
     variable: "--font-geist-mono",
     weight: ["400", "700"],
     subsets: ["latin"],
+});
+
+const playfairDisplay = Playfair_Display({
+    variable: "--font-display",
+    subsets: ["latin"],
+    weight: ["500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +33,7 @@ export default function RootLayout({
     return (
         <html
             lang="en"
-            className={`${sora.variable} ${spaceMono.variable} h-full antialiased`}
+            className={`${sora.variable} ${spaceMono.variable} ${playfairDisplay.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">{children}</body>
         </html>

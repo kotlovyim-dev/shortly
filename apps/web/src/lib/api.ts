@@ -5,6 +5,7 @@ import {
     getAccessToken,
     setAccessToken,
 } from "@/features/auth/utils/auth-storage";
+import { routes } from "@/lib/routes";
 
 type RetryableRequestConfig = InternalAxiosRequestConfig & {
     _retry?: boolean;
@@ -58,7 +59,7 @@ function redirectToLogin(): void {
     clearAccessToken();
 
     if (typeof window !== "undefined") {
-        window.location.href = "/login";
+        window.location.href = routes.auth.login;
     }
 }
 

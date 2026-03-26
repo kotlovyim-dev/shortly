@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { routes } from "@/lib/routes";
 
 const navItems = [
     { label: "Features", href: "#features" },
@@ -35,7 +36,7 @@ export function Header() {
                     </nav>
 
                     <Link
-                        href="/register"
+                        href={routes.auth.register}
                         className={cn(
                             buttonVariants({ variant: "default", size: "lg" }),
                             "shrink-0 rounded-full px-4 text-sm shadow-[0_10px_30px_oklch(0.57_0.24_296/0.28)]",

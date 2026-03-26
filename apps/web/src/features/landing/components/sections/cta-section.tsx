@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { routes } from "@/lib/routes";
 
 export function CtaSection() {
     return (
@@ -19,7 +20,7 @@ export function CtaSection() {
             </p>
             <div className="mt-8 flex justify-center">
                 <Link
-                    href="/register"
+                    href={routes.auth.register}
                     className={cn(
                         buttonVariants({ size: "lg" }),
                         "h-14 rounded-2xl px-10 text-base",

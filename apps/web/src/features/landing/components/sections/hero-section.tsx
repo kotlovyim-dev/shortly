@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { routes } from "@/lib/routes";
 
 export function HeroSection() {
     return (
@@ -24,7 +25,7 @@ export function HeroSection() {
                     </p>
                     <div className="flex flex-wrap items-center gap-4">
                         <Link
-                            href="/register"
+                            href={routes.auth.register}
                             className={cn(
                                 buttonVariants({ size: "lg" }),
                                 "h-14 rounded-2xl px-10 text-base",

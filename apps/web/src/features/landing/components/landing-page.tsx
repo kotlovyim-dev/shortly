@@ -5,7 +5,7 @@ import { HighlightsSection } from "@/features/landing/components/sections/highli
 
 export function LandingPage() {
     return (
-        <main className="relative isolate overflow-hidden bg-background text-foreground">
+        <main className="relative overflow-hidden bg-background text-foreground">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,oklch(0.66_0.24_295/0.2),transparent_55%)]" />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(to_bottom,transparent,oklch(0.15_0_0/0.08))] dark:bg-[linear-gradient(to_bottom,transparent,oklch(0.99_0_0/0.06))]" />
             <HeroSection />
