@@ -1,20 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Sora, Space_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-    variable: "--font-geist-sans",
+const sora = Sora({
+    variable: "--font-sora",
     subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const spaceMono = Space_Mono({
     variable: "--font-geist-mono",
+    weight: ["400", "700"],
     subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-    title: "Shortly",
-    description: "Shortly web app",
+    title: "Shortly | Smart URL Shortener with Live Analytics",
+    description:
+        "Shortly helps you shorten links and track clicks, countries, platforms, and devices in real time.",
 };
 
 export default function RootLayout({
@@ -25,7 +27,7 @@ export default function RootLayout({
     return (
         <html
             lang="en"
-            className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+            className={`${sora.variable} ${spaceMono.variable} h-full antialiased`}
         >
             <body className="min-h-full flex flex-col">{children}</body>
         </html>
