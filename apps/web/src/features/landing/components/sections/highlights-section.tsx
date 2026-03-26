@@ -17,7 +17,7 @@ const icons = {
 
 export function HighlightsSection() {
     return (
-        <section className="space-y-8">
+        <section id="features" className="space-y-8 scroll-mt-28">
             <div className="space-y-3">
                 <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
                     Built for fast link campaigns

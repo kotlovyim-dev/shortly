@@ -16,7 +16,10 @@ import { cn } from "@/lib/utils";
 
 export function HeroSection() {
     return (
-        <section className="relative flex min-h-screen w-full items-center overflow-hidden border-y border-border/70 bg-[url('/hero.png')] bg-cover bg-center bg-no-repeat px-6 py-12 shadow-[0_20px_80px_oklch(0.15_0_0/0.08)] sm:px-10 sm:py-16 lg:px-16 lg:py-20">
+        <section
+            id="top"
+            className="relative flex min-h-screen w-full items-center overflow-hidden border-y border-border/70 bg-[url('/hero.png')] bg-cover bg-center bg-no-repeat px-6 py-12 shadow-[0_20px_80px_oklch(0.15_0_0/0.08)] sm:px-10 sm:py-16 lg:px-16 lg:py-20"
+        >
             <div className="pointer-events-none absolute inset-0 bg-background/55" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0.15_0_0/0.35),oklch(0.15_0_0/0.15))] dark:bg-[linear-gradient(to_bottom,oklch(0.1_0_0/0.45),oklch(0.1_0_0/0.3))]" />
 

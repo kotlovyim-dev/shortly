@@ -20,7 +20,10 @@ const ClicksChart = dynamic(
 
 export function AnalyticsSection() {
     return (
-        <section className="rounded-3xl border border-border/70 bg-card/60 p-8 shadow-[0_24px_90px_oklch(0.15_0_0/0.06)] backdrop-blur-xl sm:p-10 lg:p-12">
+        <section
+            id="analytics"
+            className="scroll-mt-28 rounded-3xl border border-border/70 bg-card/60 p-8 shadow-[0_24px_90px_oklch(0.15_0_0/0.06)] backdrop-blur-xl sm:p-10 lg:p-12"
+        >
             <div className="mb-9 flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
