@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -31,9 +32,9 @@ const REFRESH_TOKEN_TTL_SECONDS = 30 * 24 * 60 * 60;
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly prismaService: PrismaService,
-    private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(JwtService) private readonly jwtService: JwtService,
+    @Inject(ConfigService) private readonly configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto): Promise<TokenPair> {
