@@ -10,6 +10,7 @@ import { envValidationSchema } from './config/env.validation';
 import { PrismaModule } from './config/db/prisma.module';
 import { RedisModule } from './config/redis/redis.module';
 import { AuthModule } from './features/auth/auth.module';
+import { LinksModule } from './features/links/links.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { AuthModule } from './features/auth/auth.module';
     RedisModule,
     PrismaModule,
     AuthModule,
+    LinksModule,
     ThrottlerModule.forRoot([
       {
         ttl: Number(process.env.THROTTLE_TTL ?? 60000),
