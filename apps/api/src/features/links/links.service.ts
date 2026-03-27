@@ -248,7 +248,9 @@ export class LinksService {
   async delete(linkId: string, currentUserId: string): Promise<void> {
     await this.ensureOwnership(linkId, currentUserId);
 
-    const deletedLinks = await this.prismaService.$queryRaw<Array<{ code: string }>>`
+    const deletedLinks = await this.prismaService.$queryRaw<
+      Array<{ code: string }>
+    >`
       UPDATE "links"
       SET
         "isActive" = FALSE,
