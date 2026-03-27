@@ -12,7 +12,7 @@ describe('JwtStrategy', () => {
     expect(
       strategy.validate({ sub: 'user-1', email: 'alice@example.com' }),
     ).toEqual({
-      userId: 'user-1',
+      id: 'user-1',
       email: 'alice@example.com',
     });
   });

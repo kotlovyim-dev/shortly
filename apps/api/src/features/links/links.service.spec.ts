@@ -1,4 +1,8 @@
-import { ConflictException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import type { PrismaService } from '../../config/db/prisma.service';
 import { LinksService } from './links.service';
 
@@ -149,5 +153,75 @@ describe('LinksService', () => {
         take: 2,
       }),
     );
+  });
+
+  it('updates an owned link', async () => {
+    prismaService.$queryRaw
+      .mockResolvedValueOnce([{ id: 'link-1', userId: 'user-1' }])
+      .mockResolvedValueOnce([
+        {
+          id: 'link-1',
+          code: 'alpha123',
+          originalUrl: 'https://example.com/a',
+          title: 'Updated title',
+          expiresAt: new Date('2026-04-01T00:00:00.000Z'),
+          clicks: 4,
+          isActive: false,
+          createdAt: new Date('2026-03-27T19:00:00.000Z'),
+          updatedAt: new Date('2026-03-27T19:30:00.000Z'),
+          userId: 'user-1',
+        },
+      ]);
+
+    await expect(
+      linksService.update('link-1', 'user-1', {
+        title: 'Updated title',
+        isActive: false,
+        expiresAt: '2026-04-01T00:00:00.000Z',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        id: 'link-1',
+        title: 'Updated title',
+        isActive: false,
+      }),
+    );
+
+    expect(prismaService.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects updates for non-owned links', async () => {
+    prismaService.$queryRaw.mockResolvedValueOnce([
+      { id: 'link-1', userId: 'user-2' },
+    ]);
+
+    await expect(
+      linksService.update('link-1', 'user-1', {
+        title: 'Updated title',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects updates for missing links', async () => {
+    prismaService.$queryRaw.mockResolvedValueOnce([]);
+
+    await expect(
+      linksService.update('missing', 'user-1', {
+        title: 'Updated title',
+      }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('soft deletes an owned link', async () => {
+    prismaService.$queryRaw.mockResolvedValueOnce([
+      { id: 'link-1', userId: 'user-1' },
+    ]);
+    prismaService.$queryRaw.mockResolvedValueOnce([]);
+
+    await expect(
+      linksService.delete('link-1', 'user-1'),
+    ).resolves.toBeUndefined();
+
+    expect(prismaService.$queryRaw).toHaveBeenCalledTimes(2);
   });
 });

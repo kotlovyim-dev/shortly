@@ -10,6 +10,8 @@ describe('LinksController', () => {
     const linksService = {
       create: jest.fn().mockResolvedValue({ shortCode: 'abc12345' }),
       findCurrentUserLinks: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
     } as unknown as LinksService;
     const controller = new LinksController(linksService);
 
@@ -28,13 +30,15 @@ describe('LinksController', () => {
     const linksService = {
       create: jest.fn(),
       findCurrentUserLinks: jest.fn().mockResolvedValue({ items: [] }),
+      update: jest.fn(),
+      delete: jest.fn(),
     } as unknown as LinksService;
     const controller = new LinksController(linksService);
 
     await expect(
       controller.listLinks(
         {
-          userId: 'user-1',
+          id: 'user-1',
           email: 'alice@example.com',
         },
         {
@@ -48,5 +52,51 @@ describe('LinksController', () => {
       page: 3,
       limit: 10,
     });
+  });
+
+  it('delegates update requests to the service', async () => {
+    const linksService = {
+      create: jest.fn(),
+      findCurrentUserLinks: jest.fn(),
+      update: jest.fn().mockResolvedValue({ id: 'link-1' }),
+      delete: jest.fn(),
+    } as unknown as LinksService;
+    const controller = new LinksController(linksService);
+
+    await expect(
+      controller.updateLink(
+        'link-1',
+        {
+          id: 'user-1',
+          email: 'alice@example.com',
+        },
+        {
+          title: 'Updated title',
+        } as never,
+      ),
+    ).resolves.toEqual({ id: 'link-1' });
+
+    expect(linksService.update).toHaveBeenCalledWith('link-1', 'user-1', {
+      title: 'Updated title',
+    });
+  });
+
+  it('delegates delete requests to the service', async () => {
+    const linksService = {
+      create: jest.fn(),
+      findCurrentUserLinks: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn().mockResolvedValue(undefined),
+    } as unknown as LinksService;
+    const controller = new LinksController(linksService);
+
+    await expect(
+      controller.deleteLink('link-1', {
+        id: 'user-1',
+        email: 'alice@example.com',
+      }),
+    ).resolves.toBeUndefined();
+
+    expect(linksService.delete).toHaveBeenCalledWith('link-1', 'user-1');
   });
 });

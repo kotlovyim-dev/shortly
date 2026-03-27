@@ -1,14 +1,17 @@
 import {
   ConflictException,
+  ForbiddenException,
   Inject,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { nanoid } from 'nanoid';
 import { PrismaService } from '../../config/db/prisma.service';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { ListLinksQueryDto } from './dto/list-links-query.dto';
+import { UpdateLinkDto } from './dto/update-link.dto';
 
 const SHORT_CODE_LENGTH = 8;
 const MAX_GENERATION_ATTEMPTS = 10;
@@ -67,6 +70,11 @@ export type LinksPageResponse = {
   total: number;
   totalPages: number;
   totalClicks: number;
+};
+
+type LinkOwnershipRow = {
+  id: string;
+  userId: string | null;
 };
 
 @Injectable()
@@ -166,6 +174,55 @@ export class LinksService {
     };
   }
 
+  async update(
+    linkId: string,
+    currentUserId: string,
+    updateLinkDto: UpdateLinkDto,
+  ): Promise<CreatedLinkResponse> {
+    await this.ensureOwnership(linkId, currentUserId);
+
+    const updatedLinks = await this.prismaService.$queryRaw<LinkRow[]>`
+      UPDATE "links"
+      SET
+        "title" = CASE WHEN ${updateLinkDto.title !== undefined} THEN ${updateLinkDto.title ?? null} ELSE "title" END,
+        "isActive" = CASE WHEN ${updateLinkDto.isActive !== undefined} THEN ${updateLinkDto.isActive ?? false} ELSE "isActive" END,
+        "expiresAt" = CASE WHEN ${updateLinkDto.expiresAt !== undefined} THEN ${updateLinkDto.expiresAt ? new Date(updateLinkDto.expiresAt) : null} ELSE "expiresAt" END,
+        "updatedAt" = NOW()
+      WHERE "id" = ${linkId}
+      RETURNING
+        "id",
+        "code",
+        "originalUrl",
+        "title",
+        "expiresAt",
+        "clicks",
+        "isActive",
+        "createdAt",
+        "updatedAt",
+        "userId"
+    `;
+
+    const updatedLink = updatedLinks[0];
+
+    if (!updatedLink) {
+      throw new InternalServerErrorException('Failed to update link');
+    }
+
+    return this.mapToResponse(updatedLink);
+  }
+
+  async delete(linkId: string, currentUserId: string): Promise<void> {
+    await this.ensureOwnership(linkId, currentUserId);
+
+    await this.prismaService.$queryRaw`
+      UPDATE "links"
+      SET
+        "isActive" = FALSE,
+        "updatedAt" = NOW()
+      WHERE "id" = ${linkId}
+    `;
+  }
+
   private async ensureShortCodeIsAvailable(shortCode: string): Promise<void> {
     if (await this.shortCodeExists(shortCode)) {
       throw new ConflictException('Short code is already in use');
@@ -183,6 +240,34 @@ export class LinksService {
     `;
 
     return existingLinks.length > 0;
+  }
+
+  private async ensureOwnership(
+    linkId: string,
+    currentUserId: string,
+  ): Promise<void> {
+    const link = await this.findLinkOwnership(linkId);
+
+    if (!link) {
+      throw new NotFoundException('Link not found');
+    }
+
+    if (link.userId !== currentUserId) {
+      throw new ForbiddenException('You do not have access to this link');
+    }
+  }
+
+  private async findLinkOwnership(
+    linkId: string,
+  ): Promise<LinkOwnershipRow | null> {
+    const links = await this.prismaService.$queryRaw<LinkOwnershipRow[]>`
+      SELECT "id", "userId"
+      FROM "links"
+      WHERE "id" = ${linkId}
+      LIMIT 1
+    `;
+
+    return links[0] ?? null;
   }
 
   private async insertLink(params: {

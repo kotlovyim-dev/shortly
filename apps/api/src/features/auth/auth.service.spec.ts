@@ -267,7 +267,7 @@ describe('AuthService', () => {
 
       await expect(
         authService.logout('refresh-token', {
-          userId: 'user-1',
+          id: 'user-1',
           email: 'alice@example.com',
         }),
       ).resolves.toBeUndefined();
@@ -295,7 +295,7 @@ describe('AuthService', () => {
 
       await expect(
         authService.logout('refresh-token', {
-          userId: 'user-2',
+          id: 'user-2',
           email: 'mallory@example.com',
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);

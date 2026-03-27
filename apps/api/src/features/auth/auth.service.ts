@@ -188,7 +188,7 @@ export class AuthService {
       return;
     }
 
-    if (storedRefreshToken.user.id !== currentUser.userId) {
+    if (storedRefreshToken.user.id !== currentUser.id) {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
