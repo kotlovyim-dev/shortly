@@ -9,12 +9,14 @@ import {
 import { randomUUID } from 'crypto';
 import { nanoid } from 'nanoid';
 import { PrismaService } from '../../config/db/prisma.service';
+import { RedisService } from '../../config/redis/redis.service';
 import { CreateLinkDto } from './dto/create-link.dto';
 import { ListLinksQueryDto } from './dto/list-links-query.dto';
 import { UpdateLinkDto } from './dto/update-link.dto';
 
 const SHORT_CODE_LENGTH = 8;
 const MAX_GENERATION_ATTEMPTS = 10;
+const SHORT_CODE_CACHE_TTL_SECONDS = 86400;
 
 type LinkRow = {
   id: string;
@@ -81,7 +83,37 @@ type LinkOwnershipRow = {
 export class LinksService {
   constructor(
     @Inject(PrismaService) private readonly prismaService: PrismaService,
+    @Inject(RedisService) private readonly redisService: RedisService,
   ) {}
+
+  async resolveShortCode(shortCode: string): Promise<string> {
+    const cachedUrl = await this.redisService.get(shortCode);
+
+    if (cachedUrl) {
+      return cachedUrl;
+    }
+
+    const link = await this.prismaService.link.findUnique({
+      where: { code: shortCode },
+      select: {
+        originalUrl: true,
+        isActive: true,
+        expiresAt: true,
+      },
+    });
+
+    if (!link || !link.isActive || this.isExpired(link.expiresAt)) {
+      throw new NotFoundException('Link not found');
+    }
+
+    await this.redisService.set(
+      shortCode,
+      link.originalUrl,
+      SHORT_CODE_CACHE_TTL_SECONDS,
+    );
+
+    return link.originalUrl;
+  }
 
   async create(createLinkDto: CreateLinkDto): Promise<CreatedLinkResponse> {
     const expiresAt = createLinkDto.expiresAt
@@ -352,5 +384,9 @@ export class LinksService {
       'code' in error &&
       (error as { code?: string }).code === 'P2002'
     );
+  }
+
+  private isExpired(expiresAt: Date | null): boolean {
+    return expiresAt !== null && expiresAt <= new Date();
   }
 }
