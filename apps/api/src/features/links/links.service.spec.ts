@@ -33,6 +33,7 @@ describe('LinksService', () => {
   let redisService: {
     get: jest.Mock;
     set: jest.Mock;
+    del: jest.Mock;
   };
   let linksService: LinksService;
 
@@ -53,6 +54,7 @@ describe('LinksService', () => {
     redisService = {
       get: jest.fn(),
       set: jest.fn(),
+      del: jest.fn(),
     };
 
     linksService = new LinksService(
@@ -281,6 +283,7 @@ describe('LinksService', () => {
     );
 
     expect(prismaService.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(redisService.del).toHaveBeenCalledWith('alpha123');
   });
 
   it('rejects updates for non-owned links', async () => {
@@ -309,12 +312,13 @@ describe('LinksService', () => {
     prismaService.$queryRaw.mockResolvedValueOnce([
       { id: 'link-1', userId: 'user-1' },
     ]);
-    prismaService.$queryRaw.mockResolvedValueOnce([]);
+    prismaService.$queryRaw.mockResolvedValueOnce([{ code: 'alpha123' }]);
 
     await expect(
       linksService.delete('link-1', 'user-1'),
     ).resolves.toBeUndefined();
 
     expect(prismaService.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(redisService.del).toHaveBeenCalledWith('alpha123');
   });
 });

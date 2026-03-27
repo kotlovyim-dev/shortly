@@ -240,19 +240,30 @@ export class LinksService {
       throw new InternalServerErrorException('Failed to update link');
     }
 
+    await this.redisService.del(updatedLink.code);
+
     return this.mapToResponse(updatedLink);
   }
 
   async delete(linkId: string, currentUserId: string): Promise<void> {
     await this.ensureOwnership(linkId, currentUserId);
 
-    await this.prismaService.$queryRaw`
+    const deletedLinks = await this.prismaService.$queryRaw<Array<{ code: string }>>`
       UPDATE "links"
       SET
         "isActive" = FALSE,
         "updatedAt" = NOW()
       WHERE "id" = ${linkId}
+      RETURNING "code"
     `;
+
+    const deletedLink = deletedLinks[0];
+
+    if (!deletedLink) {
+      throw new InternalServerErrorException('Failed to delete link');
+    }
+
+    await this.redisService.del(deletedLink.code);
   }
 
   private async ensureShortCodeIsAvailable(shortCode: string): Promise<void> {
