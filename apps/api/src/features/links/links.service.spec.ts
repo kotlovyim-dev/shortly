@@ -18,12 +18,26 @@ const { nanoid } = jest.requireMock('nanoid') as {
 describe('LinksService', () => {
   let prismaService: {
     $queryRaw: jest.Mock;
+    $transaction: jest.Mock;
+    link: {
+      findMany: jest.Mock;
+      count: jest.Mock;
+      aggregate: jest.Mock;
+    };
   };
   let linksService: LinksService;
 
   beforeEach(() => {
     prismaService = {
       $queryRaw: jest.fn(),
+      $transaction: jest.fn(async (operations: Array<Promise<unknown>>) =>
+        Promise.all(operations),
+      ),
+      link: {
+        findMany: jest.fn(),
+        count: jest.fn(),
+        aggregate: jest.fn(),
+      },
     };
 
     linksService = new LinksService(prismaService as unknown as PrismaService);
@@ -74,5 +88,66 @@ describe('LinksService', () => {
         customSlug: 'brand',
       }),
     ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it('lists current user links with pagination and total clicks', async () => {
+    prismaService.link.findMany.mockResolvedValue([
+      {
+        id: 'link-1',
+        code: 'alpha123',
+        originalUrl: 'https://example.com/a',
+        title: 'A',
+        expiresAt: null,
+        clicks: 4,
+        isActive: true,
+        createdAt: new Date('2026-03-27T19:00:00.000Z'),
+        updatedAt: new Date('2026-03-27T19:00:00.000Z'),
+      },
+      {
+        id: 'link-2',
+        code: 'beta1234',
+        originalUrl: 'https://example.com/b',
+        title: null,
+        expiresAt: null,
+        clicks: 6,
+        isActive: true,
+        createdAt: new Date('2026-03-27T18:00:00.000Z'),
+        updatedAt: new Date('2026-03-27T18:00:00.000Z'),
+      },
+    ]);
+    prismaService.link.count.mockResolvedValue(7);
+    prismaService.link.aggregate.mockResolvedValue({
+      _sum: {
+        clicks: 42,
+      },
+    });
+
+    await expect(
+      linksService.findCurrentUserLinks('user-1', { page: 2, limit: 2 }),
+    ).resolves.toEqual({
+      items: [
+        expect.objectContaining({
+          id: 'link-1',
+          shortCode: 'alpha123',
+        }),
+        expect.objectContaining({
+          id: 'link-2',
+          shortCode: 'beta1234',
+        }),
+      ],
+      page: 2,
+      limit: 2,
+      total: 7,
+      totalPages: 4,
+      totalClicks: 42,
+    });
+
+    expect(prismaService.link.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'user-1' },
+        skip: 2,
+        take: 2,
+      }),
+    );
   });
 });

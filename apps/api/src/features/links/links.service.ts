@@ -8,6 +8,7 @@ import { randomUUID } from 'crypto';
 import { nanoid } from 'nanoid';
 import { PrismaService } from '../../config/db/prisma.service';
 import { CreateLinkDto } from './dto/create-link.dto';
+import { ListLinksQueryDto } from './dto/list-links-query.dto';
 
 const SHORT_CODE_LENGTH = 8;
 const MAX_GENERATION_ATTEMPTS = 10;
@@ -35,6 +36,37 @@ export type CreatedLinkResponse = {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+};
+
+type LinkListItem = {
+  id: string;
+  code: string;
+  originalUrl: string;
+  title: string | null;
+  clicks: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type LinkSummaryResponse = {
+  id: string;
+  shortCode: string;
+  originalUrl: string;
+  title: string | null;
+  clicks: number;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type LinksPageResponse = {
+  items: LinkSummaryResponse[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  totalClicks: number;
 };
 
 @Injectable()
@@ -85,6 +117,53 @@ export class LinksService {
     throw new InternalServerErrorException(
       'Failed to generate a unique short code',
     );
+  }
+
+  async findCurrentUserLinks(
+    userId: string,
+    query: ListLinksQueryDto,
+  ): Promise<LinksPageResponse> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const skip = (page - 1) * limit;
+    const where = {
+      userId,
+    };
+
+    const [links, total, totals] = await this.prismaService.$transaction([
+      this.prismaService.link.findMany({
+        where,
+        orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          code: true,
+          originalUrl: true,
+          title: true,
+          clicks: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prismaService.link.count({ where }),
+      this.prismaService.link.aggregate({
+        where,
+        _sum: {
+          clicks: true,
+        },
+      }),
+    ]);
+
+    return {
+      items: links.map((link) => this.mapToSummary(link)),
+      page,
+      limit,
+      total,
+      totalPages: total === 0 ? 0 : Math.ceil(total / limit),
+      totalClicks: totals._sum.clicks ?? 0,
+    };
   }
 
   private async ensureShortCodeIsAvailable(shortCode: string): Promise<void> {
@@ -161,6 +240,19 @@ export class LinksService {
       originalUrl: link.originalUrl,
       title: link.title,
       expiresAt: link.expiresAt,
+      clicks: link.clicks,
+      isActive: link.isActive,
+      createdAt: link.createdAt,
+      updatedAt: link.updatedAt,
+    };
+  }
+
+  private mapToSummary(link: LinkListItem): LinkSummaryResponse {
+    return {
+      id: link.id,
+      shortCode: link.code,
+      originalUrl: link.originalUrl,
+      title: link.title,
       clicks: link.clicks,
       isActive: link.isActive,
       createdAt: link.createdAt,

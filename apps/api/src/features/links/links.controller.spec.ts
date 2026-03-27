@@ -9,6 +9,7 @@ describe('LinksController', () => {
   it('delegates create requests to the service', async () => {
     const linksService = {
       create: jest.fn().mockResolvedValue({ shortCode: 'abc12345' }),
+      findCurrentUserLinks: jest.fn(),
     } as unknown as LinksService;
     const controller = new LinksController(linksService);
 
@@ -20,6 +21,32 @@ describe('LinksController', () => {
 
     expect(linksService.create).toHaveBeenCalledWith({
       originalUrl: 'https://example.com',
+    });
+  });
+
+  it('delegates list requests to the service', async () => {
+    const linksService = {
+      create: jest.fn(),
+      findCurrentUserLinks: jest.fn().mockResolvedValue({ items: [] }),
+    } as unknown as LinksService;
+    const controller = new LinksController(linksService);
+
+    await expect(
+      controller.listLinks(
+        {
+          userId: 'user-1',
+          email: 'alice@example.com',
+        },
+        {
+          page: 3,
+          limit: 10,
+        } as never,
+      ),
+    ).resolves.toEqual({ items: [] });
+
+    expect(linksService.findCurrentUserLinks).toHaveBeenCalledWith('user-1', {
+      page: 3,
+      limit: 10,
     });
   });
 });
