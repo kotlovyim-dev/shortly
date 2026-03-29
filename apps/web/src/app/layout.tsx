@@ -25,6 +25,8 @@ export const metadata: Metadata = {
         "Shortly helps you shorten links and track clicks, countries, platforms, and devices in real time.",
 };
 
+import { Providers } from "@/components/providers";
+
 export default function RootLayout({
     children,
 }: Readonly<{
@@ -35,7 +37,9 @@ export default function RootLayout({
             lang="en"
             className={`${sora.variable} ${spaceMono.variable} ${playfairDisplay.variable} h-full antialiased`}
         >
-            <body className="min-h-full flex flex-col">{children}</body>
+            <body className="min-h-full flex flex-col">
+                <Providers>{children}</Providers>
+            </body>
         </html>
     );
 }

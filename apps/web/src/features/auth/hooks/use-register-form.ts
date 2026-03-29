@@ -1,10 +1,10 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AxiosError } from "axios";
+import { HTTPError } from "ky";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
 
 import { registerRequest } from "@/features/auth/api/auth.api";
 import {
@@ -13,7 +13,6 @@ import {
 } from "@/features/auth/schemas/auth.schema";
 
 export function useRegisterForm() {
-    const [serverError, setServerError] = useState<string | null>(null);
     const router = useRouter();
 
     const form = useForm<RegisterFormValues>({
@@ -26,33 +25,39 @@ export function useRegisterForm() {
         },
     });
 
-    const handleSubmit = form.handleSubmit(async (values) => {
-        setServerError(null);
-
-        try {
-            await registerRequest({
+    const registerMutation = useMutation({
+        mutationFn: (values: RegisterFormValues) =>
+            registerRequest({
                 name: values.name.trim(),
                 email: values.email,
                 password: values.password,
-            });
-
+            }),
+        onSuccess: () => {
             router.replace("/dashboard");
-        } catch (error) {
-            if (error instanceof AxiosError && error.response?.status === 409) {
-                setServerError("This email is already in use.");
-                return;
-            }
-
-            setServerError(
-                "Unable to create account right now. Please try again.",
-            );
-        }
+        },
     });
+
+    const handleSubmit = form.handleSubmit((values) => {
+        registerMutation.mutate(values);
+    });
+
+    let serverError: string | null = null;
+    if (registerMutation.isError) {
+        if (
+            registerMutation.error instanceof HTTPError &&
+            registerMutation.error.response?.status === 409
+        ) {
+            serverError = "This email is already in use.";
+        } else {
+            serverError =
+                "Unable to create account right now. Please try again.";
+        }
+    }
 
     return {
         form,
         serverError,
-        isSubmitting: form.formState.isSubmitting,
+        isSubmitting: registerMutation.isPending,
         handleSubmit,
     };
 }
