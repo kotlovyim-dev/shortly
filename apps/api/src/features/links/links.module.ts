@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
 import { LinksController } from './links.controller';
 import { LinksService } from './links.service';
-import { ShortCodeRedirectController } from './short-code-redirect.controller';
 
 @Module({
-  controllers: [LinksController, ShortCodeRedirectController],
+  controllers: [LinksController],
   providers: [LinksService],
+  exports: [LinksService],
 })
 export class LinksModule {}
+

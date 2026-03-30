@@ -40,9 +40,6 @@ export const api = ky.create({
 
                     try {
                         await refreshTokenRequest;
-                        // Options must include the retry, but avoid infinite loops.
-                        // We rely on standard Request object which doesn't know about prefixUrl,
-                        // ky handles Request instances correctly as absolute overrides.
                         return ky(request);
                     } catch (refreshError) {
                         if (typeof window !== "undefined") {

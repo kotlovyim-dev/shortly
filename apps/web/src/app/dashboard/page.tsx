@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, MousePointerClick } from "lucide-react";
 import { HTTPError } from "ky";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { useAuthStore } from "@/lib/store";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,20 +15,18 @@ import {
     updateLinkActivityRequest,
 } from "@/features/links/api/links.api";
 import type { LinkSummary } from "@/features/links/types/links.types";
-import { routes } from "@/lib/routes";
 
 const PAGE_SIZE = 10;
 const SHORT_BASE_URL =
     process.env.NEXT_PUBLIC_WEB_BASE_URL ?? "http://localhost:3000";
 
 export default function DashboardPage() {
-    const router = useRouter();
     const queryClient = useQueryClient();
-    const { user, setUser } = useAuthStore();
 
     const [page, setPage] = useState(1);
     const [copiedLinkId, setCopiedLinkId] = useState<string | null>(null);
     const [actionError, setActionError] = useState<string | null>(null);
+    const copyTimeoutRef = useRef<number | null>(null);
 
     const {
         data: currentUser,
@@ -41,22 +37,6 @@ export default function DashboardPage() {
         queryFn: getCurrentUserRequest,
         retry: false,
     });
-
-    useEffect(() => {
-        if (currentUser) {
-            setUser(currentUser);
-        }
-    }, [currentUser, setUser]);
-
-    useEffect(() => {
-        if (
-            isUserError &&
-            userError instanceof HTTPError &&
-            userError.response?.status === 401
-        ) {
-            router.replace(routes.auth.login);
-        }
-    }, [isUserError, userError, router]);
 
     const {
         data: linksPage,
@@ -85,26 +65,19 @@ export default function DashboardPage() {
         },
     });
 
-    useEffect(() => {
-        if (!copiedLinkId) {
-            return;
-        }
-
-        const timeout = window.setTimeout(() => {
-            setCopiedLinkId(null);
-        }, 1600);
-
-        return () => {
-            window.clearTimeout(timeout);
-        };
-    }, [copiedLinkId]);
-
     async function handleCopyShortUrl(link: LinkSummary): Promise<void> {
         const shortUrl = `${SHORT_BASE_URL}/${link.shortCode}`;
 
         try {
             await navigator.clipboard.writeText(shortUrl);
             setCopiedLinkId(link.id);
+            if (copyTimeoutRef.current !== null) {
+                window.clearTimeout(copyTimeoutRef.current);
+            }
+            copyTimeoutRef.current = window.setTimeout(() => {
+                setCopiedLinkId(null);
+                copyTimeoutRef.current = null;
+            }, 1600);
         } catch {
             setActionError("Clipboard access failed. Copy manually instead.");
         }
@@ -160,7 +133,7 @@ export default function DashboardPage() {
                         Dashboard
                     </Badge>
                     <CardTitle className="font-heading text-3xl leading-tight sm:text-4xl">
-                        {user ? `Welcome back, ${user.email}` : "Links Overview"}
+                        {currentUser ? `Welcome back, ${currentUser.email}` : "Links Overview"}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground sm:text-base">
                         Manage your short URLs, quickly toggle status, and
