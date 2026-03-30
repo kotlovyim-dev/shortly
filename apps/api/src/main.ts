@@ -9,22 +9,24 @@ import { LinksService } from './features/links/links.service';
 async function bootstrap() {
   const server = express();
 
-  server.get('/:shortCode', async (req, res, next) => {
-    if (req.params.shortCode === 'api') {
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
+
+  server.get(/^\/(?!api(?:\/|$))([^/]+)$/, async (req, res, next) => {
+    const shortCode = req.params[0];
+
+    if (!shortCode) {
       return next();
     }
 
     const linksService = app.get(LinksService);
 
     try {
-      const url = await linksService.resolveShortCode(req.params.shortCode);
-      res.redirect(302, url);
+      const url = await linksService.resolveShortCode(shortCode);
+      return res.redirect(302, url);
     } catch {
-      next();
+      return next();
     }
   });
-
-  const app = await NestFactory.create(AppModule, new ExpressAdapter(server));
 
   app.setGlobalPrefix('api');
   app.enableCors({
@@ -43,4 +45,3 @@ async function bootstrap() {
   await app.listen(Number(process.env.PORT ?? 3001));
 }
 bootstrap();
-
