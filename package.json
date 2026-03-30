@@ -33,7 +33,6 @@
         "turbo": "^2.5.8"
     },
     "overrides": {
-        "@prisma/dev": "0.24.1",
         "effect": "3.21.0",
         "lodash": "4.17.23",
         "@mrleebo/prisma-ast": "0.15.0",

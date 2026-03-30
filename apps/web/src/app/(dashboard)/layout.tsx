@@ -35,7 +35,7 @@ export default function DashboardLayout({
     const mobilePageTitle = getDashboardPageTitle(pathname);
 
     return (
-        <div className="relative min-h-svh">
+        <div className="flex min-h-100vh ">
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_8%_5%,oklch(0.72_0.2_296/0.22),transparent_30%)]" />
             <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_94%_0%,oklch(0.66_0.19_282/0.16),transparent_28%)]" />
 
