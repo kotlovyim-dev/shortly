@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Inject,
@@ -115,10 +116,11 @@ export class LinksService {
     return link.originalUrl;
   }
 
-  async create(createLinkDto: CreateLinkDto): Promise<CreatedLinkResponse> {
-    const expiresAt = createLinkDto.expiresAt
-      ? new Date(createLinkDto.expiresAt)
-      : null;
+  async create(
+    createLinkDto: CreateLinkDto,
+    currentUserId: string,
+  ): Promise<CreatedLinkResponse> {
+    const expiresAt = this.parseExpiration(createLinkDto.expiresAt);
 
     if (createLinkDto.customSlug) {
       await this.ensureShortCodeIsAvailable(createLinkDto.customSlug);
@@ -128,6 +130,7 @@ export class LinksService {
         originalUrl: createLinkDto.originalUrl,
         title: createLinkDto.title ?? null,
         expiresAt,
+        userId: currentUserId,
       });
     }
 
@@ -144,6 +147,7 @@ export class LinksService {
           originalUrl: createLinkDto.originalUrl,
           title: createLinkDto.title ?? null,
           expiresAt,
+          userId: currentUserId,
         });
       } catch (error) {
         if (this.isUniqueConstraintError(error)) {
@@ -213,12 +217,17 @@ export class LinksService {
   ): Promise<CreatedLinkResponse> {
     await this.ensureOwnership(linkId, currentUserId);
 
+    const parsedExpiresAt =
+      updateLinkDto.expiresAt !== undefined
+        ? this.parseExpiration(updateLinkDto.expiresAt)
+        : undefined;
+
     const updatedLinks = await this.prismaService.$queryRaw<LinkRow[]>`
       UPDATE "links"
       SET
         "title" = CASE WHEN ${updateLinkDto.title !== undefined} THEN ${updateLinkDto.title ?? null} ELSE "title" END,
         "isActive" = CASE WHEN ${updateLinkDto.isActive !== undefined} THEN ${updateLinkDto.isActive ?? false} ELSE "isActive" END,
-        "expiresAt" = CASE WHEN ${updateLinkDto.expiresAt !== undefined} THEN ${updateLinkDto.expiresAt ? new Date(updateLinkDto.expiresAt) : null} ELSE "expiresAt" END,
+        "expiresAt" = CASE WHEN ${parsedExpiresAt !== undefined} THEN ${parsedExpiresAt} ELSE "expiresAt" END,
         "updatedAt" = NOW()
       WHERE "id" = ${linkId}
       RETURNING
@@ -320,6 +329,7 @@ export class LinksService {
     originalUrl: string;
     title: string | null;
     expiresAt: Date | null;
+    userId: string;
   }): Promise<CreatedLinkResponse> {
     const insertedLinks = await this.prismaService.$queryRaw<LinkRow[]>`
       INSERT INTO "links" (
@@ -339,7 +349,7 @@ export class LinksService {
         ${params.expiresAt},
         NOW(),
         NOW(),
-        NULL
+        ${params.userId}
       )
       RETURNING
         "id",
@@ -401,5 +411,23 @@ export class LinksService {
 
   private isExpired(expiresAt: Date | null): boolean {
     return expiresAt !== null && expiresAt <= new Date();
+  }
+
+  private parseExpiration(expiresAt?: string): Date | null {
+    if (!expiresAt) {
+      return null;
+    }
+
+    const parsedDate = new Date(expiresAt);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      throw new BadRequestException('Invalid expiration date');
+    }
+
+    if (parsedDate <= new Date()) {
+      throw new BadRequestException('Expiration date must be in the future');
+    }
+
+    return parsedDate;
   }
 }

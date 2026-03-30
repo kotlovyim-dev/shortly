@@ -28,6 +28,7 @@ describe('LinksService', () => {
       findMany: jest.Mock;
       count: jest.Mock;
       aggregate: jest.Mock;
+      findUnique: jest.Mock;
     };
   };
   let redisService: {
@@ -86,7 +87,7 @@ describe('LinksService', () => {
       linksService.create({
         originalUrl: 'https://example.com',
         title: 'Example',
-      }),
+      }, 'user-1'),
     ).resolves.toEqual(
       expect.objectContaining({
         id: 'link-1',
@@ -106,7 +107,7 @@ describe('LinksService', () => {
       linksService.create({
         originalUrl: 'https://example.com',
         customSlug: 'brand',
-      }),
+      }, 'user-1'),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 

@@ -17,13 +17,19 @@ describe('LinksController', () => {
 
     await expect(
       controller.createLink({
+        id: 'user-1',
+        email: 'alice@example.com',
+      }, {
         originalUrl: 'https://example.com',
       }),
     ).resolves.toEqual({ shortCode: 'abc12345' });
 
-    expect(linksService.create).toHaveBeenCalledWith({
-      originalUrl: 'https://example.com',
-    });
+    expect(linksService.create).toHaveBeenCalledWith(
+      {
+        originalUrl: 'https://example.com',
+      },
+      'user-1',
+    );
   });
 
   it('delegates list requests to the service', async () => {

@@ -26,8 +26,12 @@ export class LinksController {
   ) {}
 
   @Post()
-  createLink(@Body() createLinkDto: CreateLinkDto) {
-    return this.linksService.create(createLinkDto);
+  @UseGuards(JwtAuthGuard)
+  createLink(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Body() createLinkDto: CreateLinkDto,
+  ) {
+    return this.linksService.create(createLinkDto, currentUser.id);
   }
 
   @Get()

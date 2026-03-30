@@ -8,4 +8,3 @@ import { LinksService } from './links.service';
   exports: [LinksService],
 })
 export class LinksModule {}
-
