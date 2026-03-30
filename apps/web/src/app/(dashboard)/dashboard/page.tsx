@@ -114,7 +114,12 @@ export default function DashboardPage() {
 
     let displayError = actionError;
     if (!displayError && isUserError) {
-        if (!(userError instanceof HTTPError && userError.response?.status === 401)) {
+        if (
+            !(
+                userError instanceof HTTPError &&
+                userError.response?.status === 401
+            )
+        ) {
             displayError = "Unable to verify your session right now.";
         }
     }
@@ -123,8 +128,8 @@ export default function DashboardPage() {
     }
 
     return (
-        <Card className="h-full border-border/60 bg-card/75 shadow-[0_28px_90px_oklch(0.15_0_0/0.08)] backdrop-blur-xl">
-            <CardHeader className="flex flex-col gap-3 border-b border-border/70 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <Card className="h-full rounded-2xl border border-border/60 bg-card/74 shadow-[0_24px_70px_oklch(0.15_0_0/0.08)] backdrop-blur-xl sm:rounded-3xl">
+            <CardHeader className="flex flex-col gap-3 border-b border-border/70 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-6">
                 <div className="space-y-2">
                     <Badge
                         className="w-fit bg-primary/14 text-primary"
@@ -133,7 +138,9 @@ export default function DashboardPage() {
                         Dashboard
                     </Badge>
                     <CardTitle className="font-heading text-3xl leading-tight sm:text-4xl">
-                        {currentUser ? `Welcome back, ${currentUser.email}` : "Links Overview"}
+                        {currentUser
+                            ? `Welcome back, ${currentUser.email}`
+                            : "Links Overview"}
                     </CardTitle>
                     <p className="text-sm text-muted-foreground sm:text-base">
                         Manage your short URLs, quickly toggle status, and
@@ -141,7 +148,7 @@ export default function DashboardPage() {
                     </p>
                 </div>
 
-                <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 text-right shadow-[inset_0_1px_0_oklch(1_0_0/0.7)] backdrop-blur">
+                <div className="rounded-xl border border-border/70 bg-background/70 px-4 py-3 text-right shadow-[inset_0_1px_0_oklch(1_0_0/0.7)] backdrop-blur sm:rounded-2xl">
                     <p className="text-xs tracking-[0.12em] uppercase text-muted-foreground">
                         Total clicks
                     </p>
@@ -152,7 +159,7 @@ export default function DashboardPage() {
                 </div>
             </CardHeader>
 
-            <CardContent className="space-y-4 px-0 pb-0 pt-3">
+            <CardContent className="space-y-4 px-0 pb-0 pt-3 sm:pt-4">
                 {displayError ? (
                     <div className="mx-4 rounded-xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive sm:mx-6">
                         {displayError}
@@ -193,7 +200,8 @@ export default function DashboardPage() {
                         </Button>
 
                         <span className="min-w-24 text-center text-sm text-muted-foreground">
-                            Page {page} of {Math.max(safeLinksPage.totalPages, 1)}
+                            Page {page} of{" "}
+                            {Math.max(safeLinksPage.totalPages, 1)}
                         </span>
 
                         <Button
