@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { HTTPError } from "ky";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useMutation } from "@tanstack/react-query";
 
@@ -11,9 +11,11 @@ import {
     type RegisterFormValues,
     registerSchema,
 } from "@/features/auth/schemas/auth.schema";
+import { getApiErrorMessage } from "@/lib/api-error";
 
 export function useRegisterForm() {
     const router = useRouter();
+    const [serverError, setServerError] = useState<string | null>(null);
 
     const form = useForm<RegisterFormValues>({
         resolver: zodResolver(registerSchema),
@@ -33,26 +35,22 @@ export function useRegisterForm() {
                 password: values.password,
             }),
         onSuccess: () => {
+            setServerError(null);
             router.replace("/dashboard");
+        },
+        onError: async (error) => {
+            const message = await getApiErrorMessage(
+                error,
+                "Unable to create account right now. Please try again.",
+            );
+            setServerError(message);
         },
     });
 
     const handleSubmit = form.handleSubmit((values) => {
+        setServerError(null);
         registerMutation.mutate(values);
     });
-
-    let serverError: string | null = null;
-    if (registerMutation.isError) {
-        if (
-            registerMutation.error instanceof HTTPError &&
-            registerMutation.error.response?.status === 409
-        ) {
-            serverError = "This email is already in use.";
-        } else {
-            serverError =
-                "Unable to create account right now. Please try again.";
-        }
-    }
 
     return {
         form,
