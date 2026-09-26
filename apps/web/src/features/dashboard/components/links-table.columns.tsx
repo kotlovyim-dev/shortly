@@ -9,7 +9,7 @@ type CreateLinksTableColumnsOptions = {
     copiedLinkId: string | null;
     togglingLinkId: string | null;
     shortBaseUrl: string;
-    actions: Pick<LinksTableActions, "onCopy" | "onToggle">;
+    actions: Pick<LinksTableActions, "onCopy" | "onToggle" | "onDelete">;
 };
 
 export function createLinksTableColumns({
@@ -111,6 +111,20 @@ export function createLinksTableColumns({
                 <span className="text-muted-foreground">
                     {new Date(row.original.createdAt).toLocaleDateString()}
                 </span>
+            ),
+        },
+        {
+            id: "actions",
+            header: "",
+            cell: ({ row }) => (
+                <Button
+                    className="h-7 rounded-lg"
+                    onClick={() => actions.onDelete(row.original)}
+                    size="sm"
+                    variant="destructive"
+                >
+                    Delete
+                </Button>
             ),
         },
     ];

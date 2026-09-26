@@ -35,6 +35,7 @@ export function LinksTable({ state, actions }: LinksTableProps) {
                 actions: {
                     onCopy: actions.onCopy,
                     onToggle: actions.onToggle,
+                    onDelete: actions.onDelete,
                 },
                 copiedLinkId: state.copiedLinkId,
                 shortBaseUrl: state.shortBaseUrl,
@@ -43,6 +44,7 @@ export function LinksTable({ state, actions }: LinksTableProps) {
         [
             actions.onCopy,
             actions.onToggle,
+            actions.onDelete,
             state.copiedLinkId,
             state.shortBaseUrl,
             state.togglingLinkId,
@@ -85,7 +87,7 @@ export function LinksTable({ state, actions }: LinksTableProps) {
                             <TableRow>
                                 <TableCell
                                     className="py-8 text-center text-muted-foreground"
-                                    colSpan={5}
+                                    colSpan={6}
                                 >
                                     <span className="inline-flex items-center gap-2">
                                         <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -97,7 +99,7 @@ export function LinksTable({ state, actions }: LinksTableProps) {
                             <TableRow>
                                 <TableCell
                                     className="py-8 text-center text-muted-foreground"
-                                    colSpan={5}
+                                    colSpan={6}
                                 >
                                     No links found yet.
                                 </TableCell>

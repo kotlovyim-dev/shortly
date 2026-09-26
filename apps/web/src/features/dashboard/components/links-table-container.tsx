@@ -10,6 +10,7 @@ import type {
     LinksTableState,
 } from "@/features/dashboard/components/links-table.types";
 import {
+    deleteLinkRequest,
     listLinksRequest,
     updateLinkActivityRequest,
 } from "@/features/links/api/links.api";
@@ -71,6 +72,19 @@ export function LinksTableContainer() {
                 "Failed to update link status.",
             );
             setActionError(message);
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (linkId: string) => deleteLinkRequest(linkId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["links"] });
+            setActionError(null);
+        },
+        onError: async (error) => {
+            setActionError(
+                await getApiErrorMessage(error, "Failed to delete link."),
+            );
         },
     });
 
@@ -153,6 +167,11 @@ export function LinksTableContainer() {
     const actions: LinksTableActions = {
         onCopy: (link) => {
             void handleCopyShortUrl(link);
+        },
+        onDelete: (link) => {
+            if (window.confirm(`Delete ${link.shortCode}? Its analytics will be lost.`)) {
+                deleteMutation.mutate(link.id);
+            }
         },
         onNextPage: pagination.goToNextPage,
         onPrevPage: pagination.goToPrevPage,

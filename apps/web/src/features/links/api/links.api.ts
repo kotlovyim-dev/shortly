@@ -48,3 +48,7 @@ export async function updateLinkActivityRequest(
 ): Promise<void> {
     await updateLinkRequest(linkId, { isActive });
 }
+
+export async function deleteLinkRequest(linkId: string): Promise<void> {
+    await api.delete(`api/links/${linkId}`);
+}
