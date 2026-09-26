@@ -1,6 +1,7 @@
 import {
   ConflictException,
   ForbiddenException,
+  GoneException,
   NotFoundException,
 } from '@nestjs/common';
 import type { PrismaService } from '../../config/db/prisma.service';
@@ -177,11 +178,14 @@ describe('LinksService', () => {
   });
 
   it('resolves short code from cache', async () => {
-    redisService.get.mockResolvedValueOnce('https://cached.example.com');
-
-    await expect(linksService.resolveShortCode('abc12345')).resolves.toBe(
-      'https://cached.example.com',
+    redisService.get.mockResolvedValueOnce(
+      JSON.stringify({ id: 'link-1', url: 'https://cached.example.com' }),
     );
+
+    await expect(linksService.resolveShortCode('abc12345')).resolves.toEqual({
+      id: 'link-1',
+      url: 'https://cached.example.com',
+    });
 
     expect(redisService.get).toHaveBeenCalledWith('abc12345');
     expect(prismaService.link.findUnique).not.toHaveBeenCalled();
@@ -190,18 +194,21 @@ describe('LinksService', () => {
   it('resolves short code from database and caches it', async () => {
     redisService.get.mockResolvedValueOnce(null);
     prismaService.link.findUnique.mockResolvedValueOnce({
+      id: 'link-1',
       originalUrl: 'https://db.example.com',
       isActive: true,
       expiresAt: null,
     });
 
-    await expect(linksService.resolveShortCode('xyz98765')).resolves.toBe(
-      'https://db.example.com',
-    );
+    await expect(linksService.resolveShortCode('xyz98765')).resolves.toEqual({
+      id: 'link-1',
+      url: 'https://db.example.com',
+    });
 
     expect(prismaService.link.findUnique).toHaveBeenCalledWith({
       where: { code: 'xyz98765' },
       select: {
+        id: true,
         originalUrl: true,
         isActive: true,
         expiresAt: true,
@@ -209,9 +216,34 @@ describe('LinksService', () => {
     });
     expect(redisService.set).toHaveBeenCalledWith(
       'xyz98765',
-      'https://db.example.com',
+      JSON.stringify({ id: 'link-1', url: 'https://db.example.com' }),
       86400,
     );
+  });
+
+  it('caps the cache TTL at the link expiry', async () => {
+    redisService.get.mockResolvedValueOnce(null);
+    prismaService.link.findUnique.mockResolvedValueOnce({
+      id: 'link-1',
+      originalUrl: 'https://db.example.com',
+      isActive: true,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+
+    await linksService.resolveShortCode('soon');
+
+    const ttl = redisService.set.mock.calls[0][2] as number;
+    expect(ttl).toBeGreaterThan(55);
+    expect(ttl).toBeLessThanOrEqual(60);
+  });
+
+  it('treats legacy plain-URL cache entries as a miss', async () => {
+    redisService.get.mockResolvedValueOnce('https://legacy.example.com');
+    prismaService.link.findUnique.mockResolvedValueOnce(null);
+
+    await expect(
+      linksService.resolveShortCode('legacy'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('throws not found when short code does not exist', async () => {
@@ -225,7 +257,7 @@ describe('LinksService', () => {
     expect(redisService.set).not.toHaveBeenCalled();
   });
 
-  it('throws not found when link is inactive', async () => {
+  it('throws gone when link is inactive', async () => {
     redisService.get.mockResolvedValueOnce(null);
     prismaService.link.findUnique.mockResolvedValueOnce({
       originalUrl: 'https://db.example.com',
@@ -235,12 +267,12 @@ describe('LinksService', () => {
 
     await expect(
       linksService.resolveShortCode('inactive'),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(GoneException);
 
     expect(redisService.set).not.toHaveBeenCalled();
   });
 
-  it('throws not found when link is expired', async () => {
+  it('throws gone when link is expired', async () => {
     redisService.get.mockResolvedValueOnce(null);
     prismaService.link.findUnique.mockResolvedValueOnce({
       originalUrl: 'https://db.example.com',
@@ -250,7 +282,7 @@ describe('LinksService', () => {
 
     await expect(
       linksService.resolveShortCode('expired'),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(GoneException);
 
     expect(redisService.set).not.toHaveBeenCalled();
   });
@@ -313,7 +345,7 @@ describe('LinksService', () => {
     ).rejects.toBeInstanceOf(NotFoundException);
   });
 
-  it('soft deletes an owned link', async () => {
+  it('deletes an owned link', async () => {
     prismaService.$queryRaw.mockResolvedValueOnce([
       { id: 'link-1', userId: 'user-1' },
     ]);

@@ -3,7 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type ClickEventDocument = HydratedDocument<ClickEvent>;
 
-@Schema({ collection: 'click_events' })
+@Schema({ collection: 'click_events', versionKey: false })
 export class ClickEvent {
   @Prop({ required: true })
   linkId: string;
@@ -11,22 +11,22 @@ export class ClickEvent {
   @Prop({ required: true })
   ip: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'unknown' })
   country: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'unknown' })
   city: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'unknown' })
   browser: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'unknown' })
   os: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'desktop' })
   device: string;
 
-  @Prop({ required: true })
+  @Prop({ default: 'direct' })
   referer: string;
 
   @Prop({ default: Date.now })
@@ -34,3 +34,4 @@ export class ClickEvent {
 }
 
 export const ClickEventSchema = SchemaFactory.createForClass(ClickEvent);
+ClickEventSchema.index({ linkId: 1, createdAt: -1 });
