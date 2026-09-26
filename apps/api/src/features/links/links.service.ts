@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  GoneException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -75,6 +76,8 @@ export type LinksPageResponse = {
   totalClicks: number;
 };
 
+export type ResolvedLink = { id: string; url: string };
+
 type LinkOwnershipRow = {
   id: string;
   userId: string | null;
@@ -87,33 +90,55 @@ export class LinksService {
     @Inject(RedisService) private readonly redisService: RedisService,
   ) {}
 
-  async resolveShortCode(shortCode: string): Promise<string> {
-    const cachedUrl = await this.redisService.get(shortCode);
+  async resolveShortCode(shortCode: string): Promise<ResolvedLink> {
+    const cached = this.parseCachedLink(await this.redisService.get(shortCode));
 
-    if (cachedUrl) {
-      return cachedUrl;
+    if (cached) {
+      return cached;
     }
 
     const link = await this.prismaService.link.findUnique({
       where: { code: shortCode },
       select: {
+        id: true,
         originalUrl: true,
         isActive: true,
         expiresAt: true,
       },
     });
 
-    if (!link || !link.isActive || this.isExpired(link.expiresAt)) {
+    if (!link) {
       throw new NotFoundException('Link not found');
     }
 
-    await this.redisService.set(
-      shortCode,
-      link.originalUrl,
-      SHORT_CODE_CACHE_TTL_SECONDS,
-    );
+    if (!link.isActive || this.isExpired(link.expiresAt)) {
+      throw new GoneException('Link is no longer available');
+    }
 
-    return link.originalUrl;
+    const resolved = { id: link.id, url: link.originalUrl };
+    const ttlSeconds = link.expiresAt
+      ? Math.min(
+          SHORT_CODE_CACHE_TTL_SECONDS,
+          Math.floor((link.expiresAt.getTime() - Date.now()) / 1000),
+        )
+      : SHORT_CODE_CACHE_TTL_SECONDS;
+
+    if (ttlSeconds > 0) {
+      await this.redisService.set(
+        shortCode,
+        JSON.stringify(resolved),
+        ttlSeconds,
+      );
+    }
+
+    return resolved;
+  }
+
+  async incrementClicks(linkId: string): Promise<void> {
+    // Raw SQL so a click does not bump Prisma's @updatedAt.
+    await this.prismaService.$executeRaw`
+      UPDATE "links" SET "clicks" = "clicks" + 1 WHERE "id" = ${linkId}
+    `;
   }
 
   async create(
@@ -170,8 +195,14 @@ export class LinksService {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 20);
     const skip = (page - 1) * limit;
+    const search = query.q?.trim();
     const where = {
       userId,
+      ...(search && {
+        OR: (['code', 'originalUrl', 'title'] as const).map((field) => ({
+          [field]: { contains: search, mode: 'insensitive' as const },
+        })),
+      }),
     };
 
     const [links, total, totals] = await this.prismaService.$transaction([
@@ -208,6 +239,25 @@ export class LinksService {
       totalPages: total === 0 ? 0 : Math.ceil(total / limit),
       totalClicks: totals._sum.clicks ?? 0,
     };
+  }
+
+  async findOwned(
+    linkId: string,
+    currentUserId: string,
+  ): Promise<CreatedLinkResponse> {
+    const link = await this.prismaService.link.findUnique({
+      where: { id: linkId },
+    });
+
+    if (!link) {
+      throw new NotFoundException('Link not found');
+    }
+
+    if (link.userId !== currentUserId) {
+      throw new ForbiddenException('You do not have access to this link');
+    }
+
+    return this.mapToResponse(link);
   }
 
   async update(
@@ -260,10 +310,7 @@ export class LinksService {
     const deletedLinks = await this.prismaService.$queryRaw<
       Array<{ code: string }>
     >`
-      UPDATE "links"
-      SET
-        "isActive" = FALSE,
-        "updatedAt" = NOW()
+      DELETE FROM "links"
       WHERE "id" = ${linkId}
       RETURNING "code"
     `;
@@ -296,10 +343,7 @@ export class LinksService {
     return existingLinks.length > 0;
   }
 
-  private async ensureOwnership(
-    linkId: string,
-    currentUserId: string,
-  ): Promise<void> {
+  async ensureOwnership(linkId: string, currentUserId: string): Promise<void> {
     const link = await this.findLinkOwnership(linkId);
 
     if (!link) {
@@ -407,6 +451,19 @@ export class LinksService {
       'code' in error &&
       (error as { code?: string }).code === 'P2002'
     );
+  }
+
+  // Entries written before the {id,url} format are plain URLs: treat them as a miss.
+  private parseCachedLink(value: string | null): ResolvedLink | null {
+    if (!value) return null;
+    try {
+      const parsed = JSON.parse(value) as Partial<ResolvedLink>;
+      return typeof parsed.id === 'string' && typeof parsed.url === 'string'
+        ? { id: parsed.id, url: parsed.url }
+        : null;
+    } catch {
+      return null;
+    }
   }
 
   private isExpired(expiresAt: Date | null): boolean {

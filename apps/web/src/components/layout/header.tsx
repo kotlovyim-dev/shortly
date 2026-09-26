@@ -1,27 +1,52 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { ChevronDown, Moon, Search, Sun, UserCircle2 } from "lucide-react";
 import { useTheme } from "next-themes";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useLogout } from "@/features/auth/hooks/use-logout";
+import { routes } from "@/lib/routes";
+import { useLinksSearchStore } from "@/lib/store";
+
+function LinksSearchInput() {
+    const query = useLinksSearchStore((state) => state.query);
+    const setQuery = useLinksSearchStore((state) => state.setQuery);
+
+    return (
+        <div className="relative w-full md:max-w-88">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+                aria-label="Search links"
+                className="h-9 rounded-lg bg-background pl-8"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search links"
+                type="search"
+                value={query}
+            />
+        </div>
+    );
+}
 
 export function DashboardHeader({ pageTitle }: { pageTitle: string }) {
     const { resolvedTheme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
+    const logout = useLogout();
+    // Search only filters the links table, so hide it on other pages.
+    const showSearch = usePathname() === routes.dashboard.home;
+    const mounted = useSyncExternalStore(
+        () => () => {},
+        () => true,
+        () => false,
+    );
 
     const isDark = mounted && resolvedTheme === "dark";
 
@@ -54,10 +79,10 @@ export function DashboardHeader({ pageTitle }: { pageTitle: string }) {
                     <ChevronDown className="hidden size-3.5 sm:block" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-44">
-                    <DropdownMenuItem>Account</DropdownMenuItem>
-                    <DropdownMenuItem>Preferences</DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem variant="destructive">
+                    <DropdownMenuItem
+                        onClick={() => void logout()}
+                        variant="destructive"
+                    >
                         Log out
                     </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -81,27 +106,11 @@ export function DashboardHeader({ pageTitle }: { pageTitle: string }) {
                     </div>
                 </div>
 
-                <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        aria-label="Search links"
-                        className="h-9 rounded-lg bg-background pl-8"
-                        placeholder="Search links"
-                        type="search"
-                    />
-                </div>
+                {showSearch ? <LinksSearchInput /> : null}
             </div>
 
             <div className="hidden min-h-12.5 items-center justify-between gap-4 md:flex">
-                <div className="relative w-full max-w-88">
-                    <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input
-                        aria-label="Search links"
-                        className="h-9 rounded-lg bg-background pl-8"
-                        placeholder="Search links"
-                        type="search"
-                    />
-                </div>
+                {showSearch ? <LinksSearchInput /> : <div />}
 
                 <div className="flex items-center gap-2">{actions}</div>
             </div>

@@ -1,53 +1,64 @@
 {
-    "name": "shortly",
-    "version": "0.1.0",
-    "private": true,
-    "packageManager": "npm@11.8.0",
-    "workspaces": [
-        "apps/*",
-        "packages/*"
-    ],
-    "scripts": {
-        "dev": "turbo run dev --parallel",
-        "build": "turbo run build",
-        "lint": "turbo run lint",
-        "test": "turbo run test",
-        "dev:web": "npm run dev --workspace=apps/web",
-        "build:web": "npm run build --workspace=apps/web",
-        "start:web": "npm run start --workspace=apps/web",
-        "lint:web": "npm run lint --workspace=apps/web",
-        "dev:api": "npm run dev --workspace=apps/api",
-        "build:api": "npm run build --workspace=apps/api",
-        "start:api": "npm run start:prod --workspace=apps/api",
-        "lint:api": "npm run lint --workspace=apps/api",
-        "test:api": "npm run test --workspace=apps/api",
-        "test:e2e:api": "npm run test:e2e --workspace=apps/api"
+  "name": "shortly",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@11.8.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "npm run db:generate && turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:web": "npm run build --workspace=apps/web",
+    "start:web": "npm run start --workspace=apps/web",
+    "lint:web": "npm run lint --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "build:api": "npm run build --workspace=apps/api",
+    "start:api": "npm run start:prod --workspace=apps/api",
+    "lint:api": "npm run lint --workspace=apps/api",
+    "test:api": "npm run test --workspace=apps/api",
+    "test:e2e:api": "npm run test:e2e --workspace=apps/api",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate",
+    "check": "npm run lint && npm test && npm run build"
+  },
+  "prisma": {
+    "seed": "npm run seed --workspace=apps/api"
+  },
+  "devDependencies": {
+    "dotenv": "^17.3.1",
+    "prisma": "^7.5.0",
+    "shadcn": "^4.1.0",
+    "turbo": "^2.5.8"
+  },
+  "overrides": {
+    "effect": "3.21.0",
+    "lodash": "4.17.23",
+    "@mrleebo/prisma-ast": "0.15.0",
+    "schema-utils": {
+      "ajv": "8.18.0"
     },
-    "prisma": {
-        "seed": "npm run seed --workspace=apps/api"
-    },
-    "devDependencies": {
-        "dotenv": "^17.3.1",
-        "prisma": "^7.5.0",
-        "shadcn": "^4.1.0",
-        "turbo": "^2.5.8"
-    },
-    "overrides": {
-        "effect": "3.21.0",
-        "lodash": "4.17.23",
-        "@mrleebo/prisma-ast": "0.15.0",
-        "schema-utils": {
-            "ajv": "8.18.0"
-        },
-        "terser-webpack-plugin": {
-            "webpack": "5.105.4",
-            "schema-utils": {
-                "ajv": "8.18.0"
-            }
-        }
-    },
-    "dependencies": {
-        "@prisma/client": "^7.5.0",
-        "next-themes": "^0.4.6"
+    "terser-webpack-plugin": {
+      "webpack": "5.105.4",
+      "schema-utils": {
+        "ajv": "8.18.0"
+      }
     }
+  },
+  "dependencies": {
+    "@prisma/client": "^7.5.0",
+    "next-themes": "^0.4.6"
+  },
+  "engines": {
+    "node": ">=22.12.0",
+    "npm": ">=11"
+  }
 }

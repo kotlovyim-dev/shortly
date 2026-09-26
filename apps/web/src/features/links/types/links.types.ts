@@ -42,3 +42,25 @@ export type LinksPageResponse = {
     totalPages: number;
     totalClicks: number;
 };
+
+export type CountEntry = {
+    value: string;
+    count: number;
+};
+
+export type LinkStats = {
+    totalClicks: number;
+    uniqueVisitors: number;
+    clicksToday: number;
+    topCountries: CountEntry[];
+    topReferrers: CountEntry[];
+    devices: CountEntry[];
+    browsers: CountEntry[];
+};
+
+export type TimelineDays = 7 | 30 | 90;
+
+export type TimelinePoint = {
+    date: string;
+    clicks: number;
+};

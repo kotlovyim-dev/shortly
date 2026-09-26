@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'crypto';
-import type { PrismaService } from '../../config/db/prisma.service';
 import { AuthService } from './auth.service';
 
 jest.mock('bcrypt', () => ({
@@ -34,7 +33,7 @@ describe('AuthService', () => {
       refreshToken: {
         findUnique: jest.fn(),
         create: jest.fn(),
-        delete: jest.fn(),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       $transaction: jest.fn(async (callback: (tx: any) => Promise<unknown>) =>
         callback(prismaService),
@@ -50,7 +49,7 @@ describe('AuthService', () => {
     };
 
     authService = new AuthService(
-      prismaService as unknown as PrismaService,
+      prismaService,
       jwtService as unknown as JwtService,
       configService as unknown as ConfigService,
     );
@@ -79,10 +78,10 @@ describe('AuthService', () => {
         }),
       ).resolves.toEqual({
         accessToken: 'access-token',
-        refreshToken: 'refresh-token',
+        refreshToken: expect.any(String),
       });
 
-      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 10);
+      expect(bcrypt.hash).toHaveBeenCalledWith('password123', 12);
       expect(prismaService.user.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
@@ -96,7 +95,7 @@ describe('AuthService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             userId: 'user-1',
-            tokenHash: hashToken('refresh-token'),
+            tokenHash: expect.any(String),
             expiresAt: expect.any(Date),
             id: expect.any(String),
           }),
@@ -139,7 +138,7 @@ describe('AuthService', () => {
         }),
       ).resolves.toEqual({
         accessToken: 'access-token',
-        refreshToken: 'refresh-token',
+        refreshToken: expect.any(String),
       });
 
       expect(bcrypt.compare).toHaveBeenCalledWith(
@@ -150,7 +149,7 @@ describe('AuthService', () => {
         expect.objectContaining({
           data: expect.objectContaining({
             userId: 'user-1',
-            tokenHash: hashToken('refresh-token'),
+            tokenHash: expect.any(String),
           }),
         }),
       );
@@ -205,24 +204,25 @@ describe('AuthService', () => {
       jwtService.signAsync
         .mockResolvedValueOnce('new-access-token')
         .mockResolvedValueOnce('new-refresh-token');
-      prismaService.refreshToken.delete.mockResolvedValue({});
       prismaService.refreshToken.create.mockResolvedValue({});
 
       await expect(authService.refresh('refresh-token')).resolves.toEqual({
         accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
+        refreshToken: expect.any(String),
       });
 
-      expect(prismaService.refreshToken.delete).toHaveBeenCalledWith({
-        where: {
-          tokenHash: hashToken('refresh-token'),
-        },
-      });
+      expect(prismaService.refreshToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            tokenHash: hashToken('refresh-token'),
+          }),
+        }),
+      );
       expect(prismaService.refreshToken.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
             userId: 'user-1',
-            tokenHash: hashToken('new-refresh-token'),
+            tokenHash: expect.any(String),
           }),
         }),
       );
@@ -263,8 +263,6 @@ describe('AuthService', () => {
           email: 'alice@example.com',
         },
       });
-      prismaService.refreshToken.delete.mockResolvedValue({});
-
       await expect(
         authService.logout('refresh-token', {
           id: 'user-1',
@@ -272,10 +270,13 @@ describe('AuthService', () => {
         }),
       ).resolves.toBeUndefined();
 
-      expect(prismaService.refreshToken.delete).toHaveBeenCalledWith({
+      expect(prismaService.refreshToken.updateMany).toHaveBeenCalledWith({
         where: {
           tokenHash: hashToken('refresh-token'),
+          userId: 'user-1',
+          revokedAt: null,
         },
+        data: { revokedAt: expect.any(Date) },
       });
     });
 
@@ -299,7 +300,7 @@ describe('AuthService', () => {
           email: 'mallory@example.com',
         }),
       ).rejects.toBeInstanceOf(UnauthorizedException);
-      expect(prismaService.refreshToken.delete).not.toHaveBeenCalled();
+      expect(prismaService.refreshToken.updateMany).not.toHaveBeenCalled();
     });
   });
 });

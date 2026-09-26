@@ -10,4 +10,4 @@ export const AUTH_REFRESH_TOKEN_COOKIE_MAX_AGE_MS =
   AUTH_REFRESH_TOKEN_TTL_SECONDS * 1000;
 
 export const AUTH_ACCESS_TOKEN_COOKIE_PATH = '/api';
-export const AUTH_REFRESH_TOKEN_COOKIE_PATH = '/api/auth/refresh';
+export const AUTH_REFRESH_TOKEN_COOKIE_PATH = '/api/auth';

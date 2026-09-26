@@ -10,6 +10,7 @@ import type {
     LinksTableState,
 } from "@/features/dashboard/components/links-table.types";
 import {
+    deleteLinkRequest,
     listLinksRequest,
     updateLinkActivityRequest,
 } from "@/features/links/api/links.api";
@@ -17,7 +18,7 @@ import type { LinkSummary } from "@/features/links/types/links.types";
 import { LinksTable } from "@/features/dashboard/components/links-table";
 import { getApiErrorMessage } from "@/lib/api-error";
 
-export function LinksTableContainer() {
+export function LinksTableContainer({ search }: { search: string }) {
     const queryClient = useQueryClient();
 
     const [page, setPage] = useState(1);
@@ -32,8 +33,9 @@ export function LinksTableContainer() {
         isError: isLinksError,
         error: linksError,
     } = useQuery({
-        queryKey: ["links", page],
-        queryFn: () => listLinksRequest({ page, limit: LINKS_PAGE_SIZE }),
+        queryKey: ["links", page, search],
+        queryFn: () =>
+            listLinksRequest({ page, limit: LINKS_PAGE_SIZE, q: search }),
     });
 
     const safeLinksPage = linksPage ?? {
@@ -71,6 +73,19 @@ export function LinksTableContainer() {
                 "Failed to update link status.",
             );
             setActionError(message);
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: (linkId: string) => deleteLinkRequest(linkId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["links"] });
+            setActionError(null);
+        },
+        onError: async (error) => {
+            setActionError(
+                await getApiErrorMessage(error, "Failed to delete link."),
+            );
         },
     });
 
@@ -153,6 +168,11 @@ export function LinksTableContainer() {
     const actions: LinksTableActions = {
         onCopy: (link) => {
             void handleCopyShortUrl(link);
+        },
+        onDelete: (link) => {
+            if (window.confirm(`Delete ${link.shortCode}? Its analytics will be lost.`)) {
+                deleteMutation.mutate(link.id);
+            }
         },
         onNextPage: pagination.goToNextPage,
         onPrevPage: pagination.goToPrevPage,

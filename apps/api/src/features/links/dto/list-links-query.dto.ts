@@ -1,5 +1,12 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, Max, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class ListLinksQueryDto {
   @IsOptional()
@@ -14,4 +21,9 @@ export class ListLinksQueryDto {
   @Min(1)
   @Max(100)
   limit = 20;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  q?: string;
 }

@@ -1,9 +1,17 @@
 jest.mock('./links.service', () => ({
   LinksService: class LinksService {},
 }));
+jest.mock('../click-events/clicks.service', () => ({
+  ClicksService: class ClicksService {},
+}));
 
 import { LinksController } from './links.controller';
 import type { LinksService } from './links.service';
+import type { ClicksService } from '../click-events/clicks.service';
+
+const clicksService = {
+  deleteForLink: jest.fn(),
+} as unknown as ClicksService;
 
 describe('LinksController', () => {
   it('delegates create requests to the service', async () => {
@@ -13,15 +21,18 @@ describe('LinksController', () => {
       update: jest.fn(),
       delete: jest.fn(),
     } as unknown as LinksService;
-    const controller = new LinksController(linksService);
+    const controller = new LinksController(linksService, clicksService);
 
     await expect(
-      controller.createLink({
-        id: 'user-1',
-        email: 'alice@example.com',
-      }, {
-        originalUrl: 'https://example.com',
-      }),
+      controller.createLink(
+        {
+          id: 'user-1',
+          email: 'alice@example.com',
+        },
+        {
+          originalUrl: 'https://example.com',
+        },
+      ),
     ).resolves.toEqual({ shortCode: 'abc12345' });
 
     expect(linksService.create).toHaveBeenCalledWith(
@@ -39,7 +50,7 @@ describe('LinksController', () => {
       update: jest.fn(),
       delete: jest.fn(),
     } as unknown as LinksService;
-    const controller = new LinksController(linksService);
+    const controller = new LinksController(linksService, clicksService);
 
     await expect(
       controller.listLinks(
@@ -50,7 +61,7 @@ describe('LinksController', () => {
         {
           page: 3,
           limit: 10,
-        } as never,
+        },
       ),
     ).resolves.toEqual({ items: [] });
 
@@ -67,7 +78,7 @@ describe('LinksController', () => {
       update: jest.fn().mockResolvedValue({ id: 'link-1' }),
       delete: jest.fn(),
     } as unknown as LinksService;
-    const controller = new LinksController(linksService);
+    const controller = new LinksController(linksService, clicksService);
 
     await expect(
       controller.updateLink(
@@ -78,7 +89,7 @@ describe('LinksController', () => {
         },
         {
           title: 'Updated title',
-        } as never,
+        },
       ),
     ).resolves.toEqual({ id: 'link-1' });
 
@@ -94,7 +105,7 @@ describe('LinksController', () => {
       update: jest.fn(),
       delete: jest.fn().mockResolvedValue(undefined),
     } as unknown as LinksService;
-    const controller = new LinksController(linksService);
+    const controller = new LinksController(linksService, clicksService);
 
     await expect(
       controller.deleteLink('link-1', {

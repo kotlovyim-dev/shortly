@@ -10,8 +10,13 @@ describe('JwtStrategy', () => {
     const strategy = new JwtStrategy(configService);
 
     expect(
-      strategy.validate({ sub: 'user-1', email: 'alice@example.com' }),
+      strategy.validate({
+        sub: 'user-1',
+        email: 'alice@example.com',
+        type: 'access',
+      }),
     ).toEqual({
+      name: null,
       id: 'user-1',
       email: 'alice@example.com',
     });

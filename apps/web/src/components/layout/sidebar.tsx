@@ -2,15 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-    ArrowLeft,
-    BarChart3,
-    Link2,
-    LayoutDashboard,
-    LogOut,
-    Plus,
-    Settings,
-} from "lucide-react";
+import { ArrowLeft, LayoutDashboard, LogOut } from "lucide-react";
 
 import {
     Sidebar,
@@ -23,6 +15,7 @@ import {
     SidebarMenuItem,
     SidebarSeparator,
 } from "@/components/ui/sidebar";
+import { useLogout } from "@/features/auth/hooks/use-logout";
 import { routes } from "@/lib/routes";
 
 const navItems = [
@@ -31,36 +24,17 @@ const navItems = [
         href: "/dashboard",
         icon: LayoutDashboard,
     },
-    {
-        label: "My Links",
-        href: "/dashboard/links",
-        icon: Link2,
-    },
-    {
-        label: "Create Link",
-        href: "/dashboard/create",
-        icon: Plus,
-    },
-    {
-        label: "Analytics",
-        href: "/dashboard/analytics",
-        icon: BarChart3,
-    },
-    {
-        label: "Settings",
-        href: "/dashboard/settings",
-        icon: Settings,
-    },
 ] as const;
 
 function isItemActive(pathname: string, href: string) {
     return href === "/dashboard"
-        ? pathname === href
+        ? pathname === href || pathname.startsWith("/dashboard/links/")
         : pathname.startsWith(href);
 }
 
 export function DashboardSidebar() {
     const pathname = usePathname();
+    const logout = useLogout();
 
     return (
         <Sidebar>
@@ -124,7 +98,7 @@ export function DashboardSidebar() {
                         <SidebarMenuButton
                             size="lg"
                             className="px-4 text-destructive hover:text-destructive"
-                            render={<Link href={routes.auth.login} />}
+                            onClick={() => void logout()}
                         >
                             <LogOut />
                             <span>Log out</span>

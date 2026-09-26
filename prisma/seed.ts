@@ -13,6 +13,7 @@ const prisma = new PrismaClient({
 });
 
 async function main() {
+    if (process.env.NODE_ENV === "production") throw new Error("Development seed is disabled in production");
     const passwordHash = await bcrypt.hash("DevPassword123!", 10);
 
     const user = await prisma.user.upsert({

@@ -11,16 +11,8 @@ function getDashboardPageTitle(pathname: string): string {
         return "Dashboard";
     }
 
-    if (pathname.startsWith("/dashboard/analytics")) {
+    if (pathname.startsWith("/dashboard/links/")) {
         return "Analytics";
-    }
-
-    if (pathname.startsWith("/dashboard/settings")) {
-        return "Settings";
-    }
-
-    if (pathname.startsWith("/dashboard/links")) {
-        return "Links";
     }
 
     return "Dashboard";

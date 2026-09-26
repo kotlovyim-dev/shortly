@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -27,7 +28,8 @@ import {
   AUTH_REFRESH_TOKEN_COOKIE_PATH,
 } from './auth.constants';
 
-@Controller('auth')
+@Controller('api/auth')
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
@@ -84,11 +86,7 @@ export class AuthController {
   ): Promise<void> {
     const refreshToken = this.getRefreshTokenFromCookie(request);
 
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is required');
-    }
-
-    await this.authService.logout(refreshToken, currentUser);
+    if (refreshToken) await this.authService.logout(refreshToken, currentUser);
     response.clearCookie(AUTH_ACCESS_TOKEN_COOKIE_NAME, {
       path: AUTH_ACCESS_TOKEN_COOKIE_PATH,
     });
@@ -135,8 +133,12 @@ export class AuthController {
       return undefined;
     }
 
-    return decodeURIComponent(
-      refreshCookie.slice(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`.length),
-    );
+    try {
+      return decodeURIComponent(
+        refreshCookie.slice(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`.length),
+      );
+    } catch {
+      return undefined;
+    }
   }
 }

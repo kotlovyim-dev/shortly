@@ -1,5 +1,7 @@
 generator client {
   provider = "prisma-client"
+  moduleFormat = "cjs"
+  importFileExtension = "js"
   output   = "../generated/prisma"
 }
 
@@ -34,7 +36,7 @@ model Link {
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
+  @@index([userId, createdAt, id])
   @@map("links")
 }
 
@@ -51,3 +53,4 @@ model RefreshToken {
   @@index([expiresAt])
   @@map("refresh_tokens")
 }
+

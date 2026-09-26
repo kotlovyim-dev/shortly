@@ -14,6 +14,7 @@ export type LinksTablePagination = {
 export type LinksTableActions = {
     onCopy: (link: LinkSummary) => void;
     onToggle: (link: LinkSummary) => void;
+    onDelete: (link: LinkSummary) => void;
     onPrevPage: () => void;
     onNextPage: () => void;
 };

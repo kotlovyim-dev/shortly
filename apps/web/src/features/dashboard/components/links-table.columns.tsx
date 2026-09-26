@@ -1,15 +1,17 @@
 import type { ColumnDef } from "@tanstack/react-table";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import type { LinkSummary } from "@/features/links/types/links.types";
 import type { LinksTableActions } from "@/features/dashboard/components/links-table.types";
+import { routes } from "@/lib/routes";
 
 type CreateLinksTableColumnsOptions = {
     copiedLinkId: string | null;
     togglingLinkId: string | null;
     shortBaseUrl: string;
-    actions: Pick<LinksTableActions, "onCopy" | "onToggle">;
+    actions: Pick<LinksTableActions, "onCopy" | "onToggle" | "onDelete">;
 };
 
 export function createLinksTableColumns({
@@ -111,6 +113,32 @@ export function createLinksTableColumns({
                 <span className="text-muted-foreground">
                     {new Date(row.original.createdAt).toLocaleDateString()}
                 </span>
+            ),
+        },
+        {
+            id: "actions",
+            header: "",
+            cell: ({ row }) => (
+                <div className="flex items-center gap-2">
+                    <Link
+                        className={buttonVariants({
+                            variant: "outline",
+                            size: "sm",
+                            className: "h-7 rounded-lg",
+                        })}
+                        href={routes.dashboard.link(row.original.id)}
+                    >
+                        Stats
+                    </Link>
+                    <Button
+                        className="h-7 rounded-lg"
+                        onClick={() => actions.onDelete(row.original)}
+                        size="sm"
+                        variant="destructive"
+                    >
+                        Delete
+                    </Button>
+                </div>
             ),
         },
     ];

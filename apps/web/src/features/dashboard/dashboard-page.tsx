@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinksTableContainer } from "@/features/dashboard/components/links-table-container";
 import { LinksModal } from "@/features/links/components/links-modal";
+import { useDebouncedValue } from "@/common/hooks/use-debounced-value";
+import { useLinksSearchStore } from "@/lib/store";
 
 interface DashboardPageProps {
     currentUserEmail: string | null;
@@ -19,6 +21,10 @@ export function DashboardPage({
     sessionError,
 }: DashboardPageProps) {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const searchQuery = useDebouncedValue(
+        useLinksSearchStore((state) => state.query).trim(),
+        300,
+    );
 
     return (
         <Card className="h-full rounded-2xl border border-border/60 bg-card/74 shadow-[0_24px_70px_oklch(0.15_0_0/0.08)] backdrop-blur-xl sm:rounded-3xl">
@@ -60,7 +66,8 @@ export function DashboardPage({
                     </div>
                 ) : null}
 
-                <LinksTableContainer />
+                {/* Remount on a new search so pagination restarts at page 1. */}
+                <LinksTableContainer key={searchQuery} search={searchQuery} />
 
                 <LinksModal
                     onOpenChange={setIsAddModalOpen}
