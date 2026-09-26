@@ -195,8 +195,14 @@ export class LinksService {
     const page = Number(query.page ?? 1);
     const limit = Number(query.limit ?? 20);
     const skip = (page - 1) * limit;
+    const search = query.q?.trim();
     const where = {
       userId,
+      ...(search && {
+        OR: (['code', 'originalUrl', 'title'] as const).map((field) => ({
+          [field]: { contains: search, mode: 'insensitive' as const },
+        })),
+      }),
     };
 
     const [links, total, totals] = await this.prismaService.$transaction([

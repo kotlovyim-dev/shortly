@@ -1,4 +1,4 @@
-import { RequestMethod, ValidationPipe } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { json, Request, Response, NextFunction } from 'express';
@@ -30,9 +30,8 @@ export function configureHttp(app: NestExpressApplication) {
     res.setHeader('Cache-Control', 'no-store');
     next();
   });
-  app.setGlobalPrefix('api', {
-    exclude: [{ path: ':shortCode', method: RequestMethod.GET }],
-  });
+  // No global prefix: an exclude for GET ':shortCode' also swallows every
+  // single-segment GET route (e.g. 'links'). Controllers declare 'api/' instead.
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

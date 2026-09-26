@@ -21,7 +21,7 @@ import { ClicksService } from '../click-events/clicks.service';
 import { TimelineQueryDto } from './dto/timeline-query.dto';
 import { LinksService } from './links.service';
 
-@Controller('links')
+@Controller('api/links')
 export class LinksController {
   constructor(
     @Inject(LinksService) private readonly linksService: LinksService,

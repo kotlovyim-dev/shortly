@@ -14,7 +14,7 @@
     "start:debug": "node --inspect-brk ./node_modules/tsx/dist/cli.mjs watch src/main.ts",
     "start:prod": "node dist/apps/api/src/main.js",
     "lint": "eslint \"{src,test}/**/*.ts\"",
-    "test": "jest --runInBand",
+    "test": "jest --runInBand && jest --config ./test/jest-e2e.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",

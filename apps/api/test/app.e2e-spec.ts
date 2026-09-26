@@ -90,19 +90,28 @@ function createPrismaMock() {
         refreshTokens.set(data.tokenHash, data);
         return data;
       }),
-      delete: jest.fn(async ({ where }: { where: { tokenHash: string } }) => {
-        const refreshToken = refreshTokens.get(where.tokenHash);
+      updateMany: jest.fn(
+        async ({
+          where,
+          data,
+        }: {
+          where: { tokenHash: string; userId?: string };
+          data: { revokedAt: Date };
+        }) => {
+          const refreshToken = refreshTokens.get(where.tokenHash);
 
-        if (!refreshToken) {
-          const error = new Error('Record not found');
+          if (
+            !refreshToken ||
+            refreshToken.revokedAt ||
+            (where.userId && refreshToken.userId !== where.userId)
+          ) {
+            return { count: 0 };
+          }
 
-          (error as Error & { code?: string }).code = 'P2025';
-          throw error;
-        }
-
-        refreshTokens.delete(where.tokenHash);
-        return refreshToken;
-      }),
+          refreshToken.revokedAt = data.revokedAt;
+          return { count: 1 };
+        },
+      ),
     },
     $transaction: jest.fn(async (callback: (tx: any) => Promise<unknown>) =>
       callback(prismaService),
@@ -134,6 +143,11 @@ function createPrismaMockModule(prismaService: unknown) {
   };
 }
 
+function cookieHeader(setCookieHeader: string | string[] | undefined): string {
+  const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : [];
+  return cookies.map((cookie) => cookie.split(';')[0]).join('; ');
+}
+
 function extractRefreshToken(
   setCookieHeader: string | string[] | undefined,
 ): string {
@@ -155,7 +169,7 @@ describe('Auth endpoints (e2e)', () => {
   let resetStore: () => void;
 
   beforeAll(async () => {
-    process.env.JWT_SECRET = 'test-jwt-secret-for-e2e';
+    process.env.JWT_SECRET = 'test-jwt-secret-for-e2e-at-least-32-chars';
 
     const { prismaService, reset } = createPrismaMock();
     resetStore = reset;
@@ -184,7 +198,7 @@ describe('Auth endpoints (e2e)', () => {
 
   it('registers a user and sets the refresh cookie', async () => {
     const response = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send({
         email: 'alice@example.com',
         password: 'password123',
@@ -192,17 +206,18 @@ describe('Auth endpoints (e2e)', () => {
       })
       .expect(201);
 
-    expect(response.body).toEqual({
-      accessToken: expect.any(String),
-    });
+    expect(response.body).toEqual({});
     expect(response.headers['set-cookie']).toEqual(
-      expect.arrayContaining([expect.stringContaining('refreshToken=')]),
+      expect.arrayContaining([
+        expect.stringContaining('accessToken='),
+        expect.stringContaining('refreshToken='),
+      ]),
     );
   });
 
-  it('logs in an existing user and returns only an access token', async () => {
+  it('logs in an existing user and sets auth cookies without exposing tokens', async () => {
     await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send({
         email: 'alice@example.com',
         password: 'password123',
@@ -211,24 +226,25 @@ describe('Auth endpoints (e2e)', () => {
       .expect(201);
 
     const response = await request(app.getHttpServer())
-      .post('/auth/login')
+      .post('/api/auth/login')
       .send({
         email: 'alice@example.com',
         password: 'password123',
       })
       .expect(201);
 
-    expect(response.body).toEqual({
-      accessToken: expect.any(String),
-    });
+    expect(response.body).toEqual({});
     expect(response.headers['set-cookie']).toEqual(
-      expect.arrayContaining([expect.stringContaining('refreshToken=')]),
+      expect.arrayContaining([
+        expect.stringContaining('accessToken='),
+        expect.stringContaining('refreshToken='),
+      ]),
     );
   });
 
   it('refreshes access tokens using the refresh cookie and rotates the refresh token', async () => {
     const registerResponse = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send({
         email: 'alice@example.com',
         password: 'password123',
@@ -241,20 +257,18 @@ describe('Auth endpoints (e2e)', () => {
     );
 
     const refreshResponse = await request(app.getHttpServer())
-      .post('/auth/refresh')
+      .post('/api/auth/refresh')
       .set('Cookie', `refreshToken=${encodeURIComponent(refreshCookie)}`)
       .send({})
       .expect(200);
 
-    expect(refreshResponse.body).toEqual({
-      accessToken: expect.any(String),
-    });
+    expect(refreshResponse.body).toEqual({});
     expect(refreshResponse.headers['set-cookie']).toEqual(
       expect.arrayContaining([expect.stringContaining('refreshToken=')]),
     );
 
     await request(app.getHttpServer())
-      .post('/auth/refresh')
+      .post('/api/auth/refresh')
       .set('Cookie', `refreshToken=${encodeURIComponent(refreshCookie)}`)
       .send({})
       .expect(401);
@@ -262,7 +276,7 @@ describe('Auth endpoints (e2e)', () => {
 
   it('logs out the current user and revokes the refresh token', async () => {
     const loginResponse = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send({
         email: 'alice@example.com',
         password: 'password123',
@@ -270,19 +284,17 @@ describe('Auth endpoints (e2e)', () => {
       })
       .expect(201);
 
-    const accessToken = loginResponse.body.accessToken;
     const refreshToken = extractRefreshToken(
       loginResponse.headers['set-cookie'],
     );
 
     await request(app.getHttpServer())
-      .post('/auth/logout')
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({ refreshToken })
+      .post('/api/auth/logout')
+      .set('Cookie', cookieHeader(loginResponse.headers['set-cookie']))
       .expect(200);
 
     await request(app.getHttpServer())
-      .post('/auth/refresh')
+      .post('/api/auth/refresh')
       .set('Cookie', `refreshToken=${encodeURIComponent(refreshToken)}`)
       .send({})
       .expect(401);
@@ -290,7 +302,7 @@ describe('Auth endpoints (e2e)', () => {
 
   it('rejects logout when the access token is missing', async () => {
     const registerResponse = await request(app.getHttpServer())
-      .post('/auth/register')
+      .post('/api/auth/register')
       .send({
         email: 'alice@example.com',
         password: 'password123',
@@ -303,8 +315,8 @@ describe('Auth endpoints (e2e)', () => {
     );
 
     await request(app.getHttpServer())
-      .post('/auth/logout')
-      .send({ refreshToken })
+      .post('/api/auth/logout')
+      .set('Cookie', `refreshToken=${encodeURIComponent(refreshToken)}`)
       .expect(401);
   });
 });

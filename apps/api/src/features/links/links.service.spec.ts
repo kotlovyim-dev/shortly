@@ -177,6 +177,31 @@ describe('LinksService', () => {
     );
   });
 
+  it('filters listed links by search query', async () => {
+    prismaService.link.findMany.mockResolvedValue([]);
+    prismaService.link.count.mockResolvedValue(0);
+    prismaService.link.aggregate.mockResolvedValue({ _sum: { clicks: null } });
+
+    await linksService.findCurrentUserLinks('user-1', {
+      page: 1,
+      limit: 20,
+      q: '  Docs ',
+    });
+
+    expect(prismaService.link.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          userId: 'user-1',
+          OR: [
+            { code: { contains: 'Docs', mode: 'insensitive' } },
+            { originalUrl: { contains: 'Docs', mode: 'insensitive' } },
+            { title: { contains: 'Docs', mode: 'insensitive' } },
+          ],
+        },
+      }),
+    );
+  });
+
   it('resolves short code from cache', async () => {
     redisService.get.mockResolvedValueOnce(
       JSON.stringify({ id: 'link-1', url: 'https://cached.example.com' }),

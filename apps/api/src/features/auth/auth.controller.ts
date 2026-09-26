@@ -28,7 +28,7 @@ import {
   AUTH_REFRESH_TOKEN_COOKIE_PATH,
 } from './auth.constants';
 
-@Controller('auth')
+@Controller('api/auth')
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
@@ -37,22 +37,20 @@ export class AuthController {
   async register(
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<void> {
     const tokens = await this.authService.register(registerDto);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
-    return tokens;
   }
 
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<void> {
     const tokens = await this.authService.login(loginDto);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
-    return tokens;
   }
 
   @Get('me')
@@ -66,7 +64,7 @@ export class AuthController {
   async refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+  ): Promise<void> {
     const refreshToken = this.getRefreshTokenFromCookie(request);
 
     if (!refreshToken) {
@@ -76,7 +74,6 @@ export class AuthController {
     const tokens = await this.authService.refresh(refreshToken);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
-    return tokens;
   }
 
   @Post('logout')
