@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client"
+  moduleFormat = "cjs"
   output   = "../generated/prisma"
 }
 
@@ -34,7 +35,9 @@ model Link {
   userId      String?
   user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  @@index([userId])
+  receipts ClickReceipt[]
+
+  @@index([userId, createdAt, id])
   @@map("links")
 }
 
@@ -50,4 +53,13 @@ model RefreshToken {
   @@index([userId])
   @@index([expiresAt])
   @@map("refresh_tokens")
+}
+
+model ClickReceipt {
+  id String @id
+  linkId String
+  link Link @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@index([linkId])
+  @@map("click_receipts")
 }

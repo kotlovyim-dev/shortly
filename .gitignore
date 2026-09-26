@@ -11,3 +11,7 @@ yarn-error.log*
 *.tsbuildinfo
 /generated/prisma
 .env
+.env.*
+!.env.example
+playwright-report/
+test-results/

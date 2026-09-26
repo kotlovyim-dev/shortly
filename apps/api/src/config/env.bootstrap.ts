@@ -1,14 +1,6 @@
-import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { config } from 'dotenv';
-
-const envFiles = [
-  resolve(__dirname, '../../.env'),
-  resolve(__dirname, '../../../../.env'),
-];
-
-for (const envFile of envFiles) {
-  if (existsSync(envFile)) {
-    config({ path: envFile });
-  }
+// Works from source, compiled output and either workspace cwd.
+for (const file of ['apps/api/.env', '.env', '../../.env']) {
+  config({ path: resolve(process.cwd(), file), quiet: true });
 }

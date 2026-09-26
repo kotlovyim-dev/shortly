@@ -1,7 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
-import { createHash } from 'crypto';
 import request from 'supertest';
 import { App } from 'supertest/types';
 import { AuthModule } from '../src/features/auth/auth.module';
@@ -26,9 +25,6 @@ type StoredRefreshToken = {
   createdAt: Date;
   userId: string;
 };
-
-const hashToken = (token: string): string =>
-  createHash('sha256').update(token).digest('hex');
 
 function createPrismaMock() {
   const usersByEmail = new Map<string, StoredUser>();

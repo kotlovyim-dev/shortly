@@ -8,13 +8,13 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "dev": "tsx watch src/main.ts",
-    "start": "node dist/main",
-    "start:dev": "tsx watch src/main.ts",
+    "dev": "ts-node src/main.ts",
+    "start": "node dist/apps/api/src/main.js",
+    "start:dev": "ts-node src/main.ts",
     "start:debug": "node --inspect-brk ./node_modules/tsx/dist/cli.mjs watch src/main.ts",
-    "start:prod": "node dist/main",
-    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
+    "start:prod": "node dist/apps/api/src/main.js",
+    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "test": "jest --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
@@ -34,6 +34,7 @@
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
+    "helmet": "^8.3.0",
     "ioredis": "^5.10.1",
     "joi": "^18.1.1",
     "mongoose": "^9.3.2",
@@ -42,7 +43,8 @@
     "passport-jwt": "^4.0.1",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "ua-parser-js": "^2.0.10"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

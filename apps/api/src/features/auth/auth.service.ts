@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { createHash, randomUUID } from 'crypto';
+import { createHash, randomUUID, randomBytes } from 'crypto';
 import { PrismaService } from '../../config/db/prisma.service';
 import {
   AUTH_ACCESS_TOKEN_TTL_SECONDS,
@@ -29,7 +29,7 @@ type AuthPayload = {
   name: string | null;
 };
 
-const PASSWORD_SALT_ROUNDS = 10;
+const PASSWORD_SALT_ROUNDS = 12;
 
 @Injectable()
 export class AuthService {
@@ -49,7 +49,7 @@ export class AuthService {
       return await this.prismaService.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
-            email: registerDto.email,
+            email: registerDto.email.trim().toLowerCase(),
             passwordHash,
             name: registerDto.name,
           },
@@ -86,7 +86,7 @@ export class AuthService {
   async login(loginDto: LoginDto): Promise<TokenPair> {
     const user = await this.prismaService.user.findUnique({
       where: {
-        email: loginDto.email,
+        email: loginDto.email.trim().toLowerCase(),
       },
     });
 
@@ -136,7 +136,11 @@ export class AuthService {
         },
       });
 
-      if (!storedRefreshToken || storedRefreshToken.expiresAt <= now) {
+      if (
+        !storedRefreshToken ||
+        storedRefreshToken.revokedAt ||
+        storedRefreshToken.expiresAt <= now
+      ) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -146,11 +150,12 @@ export class AuthService {
         name: storedRefreshToken.user.name,
       });
 
-      await tx.refreshToken.delete({
-        where: {
-          tokenHash,
-        },
+      const revoked = await tx.refreshToken.updateMany({
+        where: { tokenHash, revokedAt: null, expiresAt: { gt: now } },
+        data: { revokedAt: now },
       });
+      if (revoked.count !== 1)
+        throw new UnauthorizedException('Invalid refresh token');
 
       await tx.refreshToken.create({
         data: this.buildRefreshTokenRecord(
@@ -192,25 +197,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    try {
-      await this.prismaService.refreshToken.delete({
-        where: {
-          tokenHash,
-        },
-      });
-    } catch (error) {
-      if (this.isRecordNotFoundError(error)) {
-        return;
-      }
-
-      throw new InternalServerErrorException('Failed to logout user');
-    }
+    await this.prismaService.refreshToken.updateMany({
+      where: { tokenHash, userId: currentUser.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
   }
 
   private async issueTokens(payload: AuthPayload): Promise<TokenPair> {
     const secret = this.configService.getOrThrow<string>('JWT_SECRET');
     const uniquePayload = {
       ...payload,
+      type: 'access',
       jti: randomUUID(),
     };
 
@@ -219,10 +216,7 @@ export class AuthService {
       expiresIn: AUTH_ACCESS_TOKEN_TTL_SECONDS,
     });
 
-    const refreshToken = await this.jwtService.signAsync(uniquePayload, {
-      secret,
-      expiresIn: AUTH_REFRESH_TOKEN_TTL_SECONDS,
-    });
+    const refreshToken = randomBytes(48).toString('base64url');
 
     return {
       accessToken,
@@ -249,15 +243,6 @@ export class AuthService {
       error !== null &&
       'code' in error &&
       (error as { code?: string }).code === 'P2002'
-    );
-  }
-
-  private isRecordNotFoundError(error: unknown): boolean {
-    return (
-      typeof error === 'object' &&
-      error !== null &&
-      'code' in error &&
-      (error as { code?: string }).code === 'P2025'
     );
   }
 }

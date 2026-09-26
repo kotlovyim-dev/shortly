@@ -16,12 +16,15 @@ describe('LinksController', () => {
     const controller = new LinksController(linksService);
 
     await expect(
-      controller.createLink({
-        id: 'user-1',
-        email: 'alice@example.com',
-      }, {
-        originalUrl: 'https://example.com',
-      }),
+      controller.createLink(
+        {
+          id: 'user-1',
+          email: 'alice@example.com',
+        },
+        {
+          originalUrl: 'https://example.com',
+        },
+      ),
     ).resolves.toEqual({ shortCode: 'abc12345' });
 
     expect(linksService.create).toHaveBeenCalledWith(
@@ -50,7 +53,7 @@ describe('LinksController', () => {
         {
           page: 3,
           limit: 10,
-        } as never,
+        },
       ),
     ).resolves.toEqual({ items: [] });
 
@@ -78,7 +81,7 @@ describe('LinksController', () => {
         },
         {
           title: 'Updated title',
-        } as never,
+        },
       ),
     ).resolves.toEqual({ id: 'link-1' });
 

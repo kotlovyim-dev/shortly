@@ -18,7 +18,7 @@ export class RedisService implements OnModuleInit, OnApplicationShutdown {
     const pong = await this.redisClient.ping();
 
     if (pong !== 'PONG') {
-      throw new Error(`Redis ping failed: ${pong}`);
+      throw new Error('Redis ping failed');
     }
 
     this.logger.log('Redis ping successful');

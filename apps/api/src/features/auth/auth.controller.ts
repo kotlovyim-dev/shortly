@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from './current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -28,6 +29,7 @@ import {
 } from './auth.constants';
 
 @Controller('auth')
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class AuthController {
   constructor(@Inject(AuthService) private readonly authService: AuthService) {}
 
@@ -35,20 +37,22 @@ export class AuthController {
   async register(
     @Body() registerDto: RegisterDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<void> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const tokens = await this.authService.register(registerDto);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
+    return tokens;
   }
 
   @Post('login')
   async login(
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<void> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const tokens = await this.authService.login(loginDto);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
+    return tokens;
   }
 
   @Get('me')
@@ -62,7 +66,7 @@ export class AuthController {
   async refresh(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ): Promise<void> {
+  ): Promise<{ accessToken: string; refreshToken: string }> {
     const refreshToken = this.getRefreshTokenFromCookie(request);
 
     if (!refreshToken) {
@@ -72,6 +76,7 @@ export class AuthController {
     const tokens = await this.authService.refresh(refreshToken);
 
     this.setAuthCookies(response, tokens.accessToken, tokens.refreshToken);
+    return tokens;
   }
 
   @Post('logout')
@@ -84,11 +89,7 @@ export class AuthController {
   ): Promise<void> {
     const refreshToken = this.getRefreshTokenFromCookie(request);
 
-    if (!refreshToken) {
-      throw new UnauthorizedException('Refresh token is required');
-    }
-
-    await this.authService.logout(refreshToken, currentUser);
+    if (refreshToken) await this.authService.logout(refreshToken, currentUser);
     response.clearCookie(AUTH_ACCESS_TOKEN_COOKIE_NAME, {
       path: AUTH_ACCESS_TOKEN_COOKIE_PATH,
     });
@@ -135,8 +136,12 @@ export class AuthController {
       return undefined;
     }
 
-    return decodeURIComponent(
-      refreshCookie.slice(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`.length),
-    );
+    try {
+      return decodeURIComponent(
+        refreshCookie.slice(`${AUTH_REFRESH_TOKEN_COOKIE_NAME}=`.length),
+      );
+    } catch {
+      return undefined;
+    }
   }
 }

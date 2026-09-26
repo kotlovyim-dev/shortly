@@ -16,9 +16,7 @@ jest.mock('nanoid', () => ({
   nanoid: jest.fn(),
 }));
 
-const { nanoid } = jest.requireMock('nanoid') as {
-  nanoid: jest.Mock;
-};
+const { nanoid } = jest.requireMock('nanoid');
 
 describe('LinksService', () => {
   let prismaService: {
@@ -84,10 +82,13 @@ describe('LinksService', () => {
     ]);
 
     await expect(
-      linksService.create({
-        originalUrl: 'https://example.com',
-        title: 'Example',
-      }, 'user-1'),
+      linksService.create(
+        {
+          originalUrl: 'https://example.com',
+          title: 'Example',
+        },
+        'user-1',
+      ),
     ).resolves.toEqual(
       expect.objectContaining({
         id: 'link-1',
@@ -104,10 +105,13 @@ describe('LinksService', () => {
     prismaService.$queryRaw.mockResolvedValueOnce([{ code: 'brand' }]);
 
     await expect(
-      linksService.create({
-        originalUrl: 'https://example.com',
-        customSlug: 'brand',
-      }, 'user-1'),
+      linksService.create(
+        {
+          originalUrl: 'https://example.com',
+          customSlug: 'brand',
+        },
+        'user-1',
+      ),
     ).rejects.toBeInstanceOf(ConflictException);
   });
 
@@ -260,7 +264,7 @@ describe('LinksService', () => {
           code: 'alpha123',
           originalUrl: 'https://example.com/a',
           title: 'Updated title',
-          expiresAt: new Date('2026-04-01T00:00:00.000Z'),
+          expiresAt: new Date('2099-04-01T00:00:00.000Z'),
           clicks: 4,
           isActive: false,
           createdAt: new Date('2026-03-27T19:00:00.000Z'),
@@ -273,7 +277,7 @@ describe('LinksService', () => {
       linksService.update('link-1', 'user-1', {
         title: 'Updated title',
         isActive: false,
-        expiresAt: '2026-04-01T00:00:00.000Z',
+        expiresAt: '2099-04-01T00:00:00.000Z',
       }),
     ).resolves.toEqual(
       expect.objectContaining({
