@@ -10,3 +10,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     setUser: (user) => set({ user }),
 }));
+
+interface LinksSearchState {
+    query: string;
+    setQuery: (query: string) => void;
+}
+
+export const useLinksSearchStore = create<LinksSearchState>((set) => ({
+    query: "",
+    setQuery: (query) => set({ query }),
+}));

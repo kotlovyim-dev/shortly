@@ -18,7 +18,7 @@ import type { LinkSummary } from "@/features/links/types/links.types";
 import { LinksTable } from "@/features/dashboard/components/links-table";
 import { getApiErrorMessage } from "@/lib/api-error";
 
-export function LinksTableContainer() {
+export function LinksTableContainer({ search }: { search: string }) {
     const queryClient = useQueryClient();
 
     const [page, setPage] = useState(1);
@@ -33,8 +33,9 @@ export function LinksTableContainer() {
         isError: isLinksError,
         error: linksError,
     } = useQuery({
-        queryKey: ["links", page],
-        queryFn: () => listLinksRequest({ page, limit: LINKS_PAGE_SIZE }),
+        queryKey: ["links", page, search],
+        queryFn: () =>
+            listLinksRequest({ page, limit: LINKS_PAGE_SIZE, q: search }),
     });
 
     const safeLinksPage = linksPage ?? {

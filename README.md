@@ -1,6 +1,6 @@
 # 🔗 Shortly
 
-> A full-stack URL shortener with built-in click analytics. Turn any long URL into a short link, share it anywhere, and track every click — country, device, browser, and referrer — in real time.
+> A full-stack URL shortener with built-in click analytics. Turn any long URL into a short link, share it anywhere, and track every click — device, browser, and referrer — in real time.
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js)](https://nextjs.org/)
 [![NestJS](https://img.shields.io/badge/NestJS-11.1-E0234E?logo=nestjs)](https://nestjs.com/)
@@ -50,7 +50,7 @@ Shortly is a monorepo combining a **Next.js** frontend with a **NestJS** API bac
 ### 📊 Click Analytics
 
 - Every redirect asynchronously records a click event to MongoDB
-- Tracked fields: IP, country, city, browser, OS, device type, referrer
+- Tracked fields: IP, browser, OS, device type, referrer (country/city are stored as `unknown` until a geo-IP source is added)
 - Per-link summary: total clicks, unique IPs, clicks today, top countries, top referrers
 - Timeline endpoint: clicks grouped by day for 7 / 30 / 90-day windows
 
@@ -296,21 +296,9 @@ Keys are deleted on link update or deactivation to prevent stale cache hits.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22.12+
 - npm 11+
-- Running instances of **PostgreSQL**, **MongoDB**, and **Redis**
-
-#### Quick infrastructure with Docker
-
-```bash
-docker run -d --name shortly-pg \
-  -e POSTGRES_DB=shortly -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password \
-  -p 5432:5432 postgres:16-alpine
-
-docker run -d --name shortly-mongo -p 27017:27017 mongo:7
-
-docker run -d --name shortly-redis -p 6379:6379 redis:7-alpine
-```
+- Docker (for PostgreSQL, MongoDB and Redis via `compose.yaml`)
 
 ### 1. Clone
 
@@ -325,38 +313,19 @@ cd shortly
 npm install
 ```
 
-### 3. Configure environment
+### 3. Configure environment and start databases
 
-The API loads env from `apps/api/.env` (falling back to `.env` at root).
-Create `apps/api/.env`:
-
-```env
-# PostgreSQL
-DATABASE_URL=postgresql://user:password@localhost:5432/shortly
-
-# MongoDB
-MONGODB_URI=mongodb://localhost:27017/shortly
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# JWT
-JWT_SECRET=your_super_secret_key_here
-
-# Server (optional — defaults shown)
-PORT=3001
-CORS_ORIGIN=http://localhost:3000
-NODE_ENV=development
-
-# Rate limiting (optional — defaults shown)
-THROTTLE_TTL=60000
-THROTTLE_LIMIT=10
+```bash
+cp .env.example .env   # dev defaults; compose.yaml reads the same file
+npm run db:up          # PostgreSQL, MongoDB, Redis
 ```
+
+The API loads env from `apps/api/.env`, falling back to `.env` at the root.
 
 ### 4. Run migrations
 
 ```bash
-npx prisma migrate dev
+npm run db:migrate
 ```
 
 ### 5. Seed database (optional)
@@ -386,12 +355,16 @@ npm run dev
 | `DATABASE_URL`   | ✅       | —                       | PostgreSQL connection string      |
 | `MONGODB_URI`    | ✅       | —                       | MongoDB connection string         |
 | `REDIS_URL`      | ✅       | —                       | Redis connection string           |
-| `JWT_SECRET`     | ✅       | —                       | Secret used to sign access tokens |
+| `JWT_SECRET`     | ✅       | —                       | Access-token signing secret, ≥ 32 chars |
 | `PORT`           | ❌       | `3001`                  | NestJS listen port                |
-| `CORS_ORIGIN`    | ❌       | `http://localhost:3000` | Allowed CORS origin               |
+| `CORS_ORIGIN`    | ❌       | `http://localhost:3000` | Allowed CORS / CSRF origin (the web app) |
 | `NODE_ENV`       | ❌       | `development`           | Node environment                  |
 | `THROTTLE_TTL`   | ❌       | `60000`                 | Rate limit window in ms           |
-| `THROTTLE_LIMIT` | ❌       | `10`                    | Max requests per window           |
+| `THROTTLE_LIMIT` | ❌       | `120`                   | Max requests per window (auth: 10/min) |
+| `TRUST_PROXY`    | ❌       | —                       | Comma-separated proxy IPs/CIDRs for `req.ip` |
+| `ANALYTICS_RETENTION_DAYS` | ❌ | `90`               | Click events are deleted after this many days |
+| `NEXT_PUBLIC_API_BASE_URL` | ❌ | `http://localhost:3001` | Web: API origin              |
+| `NEXT_PUBLIC_WEB_BASE_URL` | ❌ | `http://localhost:3000` | Web: origin shown in short URLs |
 
 ---
 
@@ -404,6 +377,9 @@ npm run dev              # Start all workspaces in parallel (Turborepo)
 npm run build            # Build all workspaces
 npm run lint             # Lint all workspaces
 npm run test             # Test all workspaces
+npm run check            # lint + test + build (what CI runs)
+npm run db:up            # Start PostgreSQL, MongoDB, Redis (docker compose)
+npm run db:migrate       # Apply Prisma migrations
 ```
 
 ### API workspace
@@ -413,7 +389,7 @@ npm run dev:api                      # NestJS watch mode
 npm run build:api                    # Compile to dist/
 npm run start:api                    # Start compiled build (prod)
 npm run lint:api                     # ESLint
-npm run test:api                     # Unit tests (Jest)
+npm run test:api                     # Unit + e2e tests (Jest)
 npm run test:e2e:api                 # End-to-end tests
 npm run seed --workspace=apps/api    # Seed the database
 ```
@@ -435,8 +411,8 @@ npm run lint:web         # ESLint
 
 | Method | Path                 | Auth | Description                        |
 | ------ | -------------------- | ---- | ---------------------------------- |
-| `POST` | `/api/auth/register` | —    | Create account, returns token pair |
-| `POST` | `/api/auth/login`    | —    | Login, returns token pair          |
+| `POST` | `/api/auth/register` | —    | Create account, sets auth cookies  |
+| `POST` | `/api/auth/login`    | —    | Login, sets auth cookies           |
 | `GET`  | `/api/auth/me`       | JWT  | Get current user                   |
 | `POST` | `/api/auth/refresh`  | —    | Rotate refresh token               |
 | `POST` | `/api/auth/logout`   | JWT  | Revoke refresh token               |
@@ -446,9 +422,14 @@ npm run lint:web         # ESLint
 | Method   | Path             | Auth | Description                          |
 | -------- | ---------------- | ---- | ------------------------------------ |
 | `POST`   | `/api/links`     | JWT  | Create a new short link              |
-| `GET`    | `/api/links`     | JWT  | List own links (paginated)           |
+| `GET`    | `/api/links`     | JWT  | List own links (`page`, `limit`, `q` search) |
+| `GET`    | `/api/links/:id` | JWT  | Get one own link                     |
 | `PATCH`  | `/api/links/:id` | JWT  | Update title / isActive / expiresAt  |
-| `DELETE` | `/api/links/:id` | JWT  | Delete link + invalidate Redis cache |
+| `DELETE` | `/api/links/:id` | JWT  | Delete link, its clicks, and cache   |
+| `GET`    | `/api/links/:id/stats` | JWT | Totals, unique IPs, today, top referrers/countries/devices/browsers |
+| `GET`    | `/api/links/:id/timeline?days=7\|30\|90` | JWT | Clicks per day (UTC), zero-filled |
+
+Tokens are never returned in response bodies; they live in `httpOnly` cookies.
 
 ### Redirect
 
@@ -456,7 +437,7 @@ npm run lint:web         # ESLint
 | ------ | ------------- | ---- | -------------------------------------------- |
 | `GET`  | `/:shortCode` | —    | Resolve and redirect (`302` / `404` / `410`) |
 
-> Redirect routes are registered **outside** the `/api` prefix directly in `main.ts` so short URLs stay clean (e.g. `http://localhost:3001/xK9mP2`).
+> There is no global `/api` prefix: API controllers declare `api/...` themselves, so the root `/:shortCode` redirect stays clean (e.g. `http://localhost:3001/xK9mP2`).
 
 ### Analytics _(coming soon)_
 

@@ -18,6 +18,10 @@ export async function refreshRequest(): Promise<void> {
     await api.post("api/auth/refresh");
 }
 
+export async function logoutRequest(): Promise<void> {
+    await api.post("api/auth/logout");
+}
+
 export async function getCurrentUserRequest(): Promise<CurrentUserResponse> {
     return api.get("api/auth/me").json<CurrentUserResponse>();
 }
